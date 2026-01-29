@@ -1,0 +1,80 @@
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../api/fishpi_api.dart';
+import '../api/client.dart';
+import '../models/user.dart';
+import '../utils/constants.dart';
+
+class AuthProvider extends ChangeNotifier {
+  final ApiClient _apiClient;
+  late final FishPiApi _fishPiApi;
+
+  User? _user;
+  String? _apiKey;
+  bool _isLoading = false;
+
+  User? get user => _user;
+  String? get apiKey => _apiKey;
+  bool get isLoggedIn => _apiKey != null;
+  bool get isLoading => _isLoading;
+  FishPiApi get api => _fishPiApi;
+
+  AuthProvider() : _apiClient = ApiClient() {
+    _fishPiApi = FishPiApi(_apiClient);
+    _loadApiKey();
+  }
+
+  Future<void> _loadApiKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    _apiKey = prefs.getString(AppConstants.apiKey);
+    if (_apiKey != null) {
+      _apiClient.setApiKey(_apiKey);
+      await refreshUser();
+    }
+  }
+
+  Future<void> login(
+    String username,
+    String password, {
+    String? mfaCode,
+    bool rememberMe = true,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final key = await _fishPiApi.login(username, password, mfaCode: mfaCode);
+      _apiKey = key;
+      _apiClient.setApiKey(key);
+      if (rememberMe) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(AppConstants.apiKey, key);
+      }
+      await refreshUser();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshUser() async {
+    try {
+      _user = await _fishPiApi.getUser();
+      notifyListeners();
+    } catch (e) {
+      // If token is invalid, maybe logout?
+      debugPrint('Error fetching user: $e');
+    }
+  }
+
+  Future<void> logout() async {
+    _apiKey = null;
+    _user = null;
+    _apiClient.setApiKey(null);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConstants.apiKey);
+    notifyListeners();
+  }
+}
