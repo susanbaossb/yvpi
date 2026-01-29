@@ -1672,3 +1672,7 @@ curl --location --request POST 'https://fishpi.cn/breezemoon' \
 | userName      | 用户在摸鱼派的用户名                                                                                            | adlered      |
 | item          | 物品名称                                                                                                        | checkin2days |
 | sum           | 物品数量，填写正数（如10）则发放指定数量物品，填写负数（如-10）则从背包中扣除指定数量物品，如物品数量不足则归零 | 10           |
+=======
+# yvpi
+摸鱼派windows&amp;&amp;web版
+>>>>>>> c0b1fe33200f74316e9e2e8161c17f0188f479e8
