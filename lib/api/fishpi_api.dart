@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/user.dart';
 import '../models/article.dart';
+import '../models/article_detail.dart';
 import '../models/breezemoon.dart';
 import 'package:dio/dio.dart';
 import 'client.dart';
@@ -139,6 +140,19 @@ class FishPiApi {
     };
   }
 
+  Future<ArticleDetail> getArticleDetail(String articleId) async {
+    try {
+      final response = await _client.dio.get('/api/article/$articleId');
+      if (response.data['code'] == 0) {
+        return ArticleDetail.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['msg'] ?? 'Failed to load article detail');
+    } catch (e) {
+      print('getArticleDetail error: $e');
+      rethrow;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getMockCheckinRank() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
@@ -160,38 +174,32 @@ class FishPiApi {
   }
 
   // Get user liveness
-  Future<int> getLiveness() async {
+  Future<double> getLiveness() async {
     try {
       final response = await _client.dio.get('/user/liveness');
-      if (response.data['code'] == 0) {
-        // Handle various possible response structures
-        if (response.data['liveness'] != null) {
-          return (response.data['liveness'] as num).toInt();
-        }
-        if (response.data['data'] != null) {
-          if (response.data['data'] is int) {
-            return (response.data['data'] as num).toInt();
-          }
-          if (response.data['data'] is Map &&
-              response.data['data']['liveness'] != null) {
-            return (response.data['data']['liveness'] as num).toInt();
-          }
-        }
+
+      // Handle various possible response structures
+      if (response.data['liveness'] != null) {
+        return (response.data['liveness'] as num).toDouble();
       }
-      return 0;
+      return 0.0;
     } catch (e) {
       // Silence 500 errors or typical auth errors to avoid console noise
       if (e is DioException && e.response?.statusCode == 500) {
         // Server error (often happens if not logged in or server issue), just return 0
-        return 0;
+        return 0.0;
       }
       print('getLiveness error: $e');
-      return 0;
+      return 0.0;
     }
   }
 
   // Collect yesterday's reward
-  Future<String> collectYesterdayReward() async {
+  // Returns the reward amount.
+  // -1: Already collected
+  // 0: No reward available
+  // > 0: Reward amount collected
+  Future<int> collectYesterdayReward() async {
     try {
       final response = await _client.dio.get(
         '/activity/yesterday-liveness-reward-api',
@@ -199,14 +207,7 @@ class FishPiApi {
 
       final data = response.data;
       if (data is Map && data.containsKey('sum')) {
-        final sum = data['sum'];
-        if (sum == -1) {
-          return '今天已经领取过积分';
-        }
-        if (sum > 0) {
-          return '领取成功，获得 $sum 积分';
-        }
-        return '暂无奖励可领取';
+        return (data['sum'] as num).toInt();
       }
 
       throw Exception('领取失败：未知响应格式');
@@ -259,6 +260,53 @@ class FishPiApi {
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  // Send BreezeMoon
+  Future<void> sendBreezeMoon(String content) async {
+    try {
+      final response = await _client.dio.post(
+        '/api/breezemoon',
+        data: {'content': content},
+      );
+      if (response.data['code'] != 0) {
+        throw Exception(response.data['msg'] ?? '发布失败');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<ArticleComment>> getArticleComments(
+    String articleId, {
+    int page = 1,
+  }) async {
+    try {
+      final response = await _client.dio.get(
+        '/api/comment/$articleId',
+        queryParameters: {'p': page},
+      );
+      if (response.data['code'] == 0) {
+        final data = response.data['data'];
+        List list = [];
+        if (data is List) {
+          list = data;
+        } else if (data is Map) {
+          // Combine nice comments and regular comments
+          final niceComments = data['articleNiceComments'] as List? ?? [];
+          final comments = data['articleComments'] as List? ?? [];
+          // Also check for 'comments' key as fallback
+          final legacyComments = data['comments'] as List? ?? [];
+
+          list = [...niceComments, ...comments, ...legacyComments];
+        }
+        return list.map((e) => ArticleComment.fromJson(e)).toList();
+      }
+      return [];
+    } catch (e) {
+      print('getArticleComments error: $e');
+      return [];
     }
   }
 }

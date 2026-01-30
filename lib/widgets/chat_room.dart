@@ -134,31 +134,37 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0x11000000)),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                const Text(
-                  '聊天室',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const Text(
+                '聊天室',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
                 const SizedBox(width: 8),
-                Text(
-                  '($_onlineCount人在线)',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ValueListenableBuilder<int>(
+                  valueListenable: _onlineCount,
+                  builder: (context, value, child) {
+                    return Text(
+                      '($value人在线)',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    );
+                  },
                 ),
                 const Spacer(),
                 TextButton(
                   onPressed: () {},
+                  style: TextButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   child: const Text('进入完整版', style: TextStyle(fontSize: 12)),
                 ),
               ],
@@ -167,27 +173,58 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
           const Divider(height: 1),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    textInputAction: TextInputAction.send,
-                    decoration: const InputDecoration(
-                      hintText: '说点什么...',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFFE0E0E0)),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      textInputAction: TextInputAction.send,
+                      style: const TextStyle(fontSize: 13),
+                      decoration: const InputDecoration(
+                        hintText: '说点什么...',
+                        hintStyle: TextStyle(fontSize: 13),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        isDense: true,
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 24,
+                    color: const Color(0xFFE0E0E0),
+                  ),
+                  InkWell(
+                    onTap: _sendMessage,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(4),
+                      bottomRight: Radius.circular(4),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
                         vertical: 8,
                       ),
-                      isDense: true,
+                      child: const Text(
+                        '发送',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
                     ),
-                    onSubmitted: (_) => _sendMessage(),
                   ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(onPressed: _sendMessage, child: const Text('发送')),
-              ],
+                ],
+              ),
             ),
           ),
           const Divider(height: 1),
@@ -266,8 +303,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
               },
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

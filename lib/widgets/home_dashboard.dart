@@ -106,7 +106,7 @@ class _LivenessCard extends StatefulWidget {
 }
 
 class _LivenessCardState extends State<_LivenessCard> {
-  int _liveness = 0;
+  double _liveness = 0.0;
   bool _loading = true;
 
   @override
@@ -187,7 +187,7 @@ class _LivenessCardState extends State<_LivenessCard> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '$_liveness%',
+                  '${_liveness.toStringAsFixed(2)}%',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -215,17 +215,27 @@ class _RewardCard extends StatefulWidget {
 
 class _RewardCardState extends State<_RewardCard> {
   bool _claiming = false;
+  // -1: already claimed, >0: claimed amount, 0: no reward, null: default
+  int? _resultStatus;
 
   Future<void> _claim() async {
     if (_claiming) return;
     setState(() => _claiming = true);
     try {
       final api = context.read<AuthProvider>().api;
-      final msg = await api.collectYesterdayReward();
+      final sum = await api.collectYesterdayReward();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.green),
-        );
+        setState(() {
+          _resultStatus = sum;
+        });
+        // Clear status after 2 seconds
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() {
+              _resultStatus = null;
+            });
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -256,23 +266,64 @@ class _RewardCardState extends State<_RewardCard> {
         child: Container(
           height: 110,
           padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.monetization_on, color: Colors.orange, size: 32),
-              const SizedBox(height: 8),
-              const Text(
-                '昨日活跃奖励',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                _claiming ? '领取中...' : '一键领取 · 活跃积分',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ),
+          child: _buildContent(),
         ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_resultStatus != null) {
+      if (_resultStatus == -1 || _resultStatus == 0) {
+        // Already claimed or no reward
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('😳', style: TextStyle(fontSize: 28)),
+            const SizedBox(height: 4),
+            const Text(
+              '没有未领取奖励喔!',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '明天再来试试吧',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        );
+      } else {
+        // Success
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('😄', style: TextStyle(fontSize: 28)),
+            const SizedBox(height: 4),
+            const Text('恭喜你!', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              '领取了 $_resultStatus 积分',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        );
+      }
+    }
+
+    // Default state
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.monetization_on, color: Colors.orange, size: 32),
+        const SizedBox(height: 8),
+        const Text('昨日活跃奖励', style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          _claiming ? '领取中...' : '一键领取 · 活跃积分',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+      ],
     );
   }
 }
