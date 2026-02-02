@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart';
 import 'user_info_card.dart';
+import '../utils/constants.dart';
 
 class HoverUserCard extends StatefulWidget {
   final Widget child;
@@ -21,7 +22,7 @@ class HoverUserCard extends StatefulWidget {
   State<HoverUserCard> createState() => _HoverUserCardState();
 }
 
-class _HoverUserCardState extends State<HoverUserCard> {
+class _HoverUserCardState extends State<HoverUserCard> with RouteAware {
   OverlayEntry? _overlayEntry;
   Timer? _hideTimer;
   User? _cachedUser;
@@ -31,27 +32,80 @@ class _HoverUserCardState extends State<HoverUserCard> {
   static OverlayEntry? _currentOverlayEntry;
   static _HoverUserCardState? _currentHoverState;
 
+  Timer? _showTimer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
+    _showTimer?.cancel();
     _hideTimer?.cancel();
-    if (_overlayEntry == _currentOverlayEntry) {
+    if (_overlayEntry != null && _overlayEntry == _currentOverlayEntry) {
       _removeCurrentOverlay();
+    } else if (_overlayEntry?.mounted == true) {
+      _overlayEntry?.remove();
     }
     super.dispose();
   }
 
+  @override
+  void didPushNext() {
+    // When a new route is pushed on top of this one
+    _hideTimer?.cancel();
+    _showTimer?.cancel();
+    if (_overlayEntry != null && _overlayEntry == _currentOverlayEntry) {
+      _removeCurrentOverlay();
+    }
+  }
+
+  @override
+  void deactivate() {
+    _hideTimer?.cancel();
+    _showTimer?.cancel();
+    if (_overlayEntry != null && _overlayEntry == _currentOverlayEntry) {
+      _removeCurrentOverlay();
+    }
+    super.deactivate();
+  }
+
   static void _removeCurrentOverlay() {
-    if (_currentOverlayEntry?.mounted == true) {
-      _currentOverlayEntry?.remove();
+    try {
+      if (_currentOverlayEntry?.mounted == true) {
+        _currentOverlayEntry?.remove();
+      }
+    } catch (e) {
+      // Ignore error if entry is already disposed
+      print('Error removing overlay: $e');
     }
     _currentOverlayEntry = null;
-    _currentHoverState?._overlayEntry =
-        null; // Ensure the state knows it's removed
+    _currentHoverState?._overlayEntry = null;
     _currentHoverState = null;
   }
 
-  void _showOverlay() {
+  void _scheduleShowOverlay() {
+    _showTimer?.cancel();
     _hideTimer?.cancel();
+    _showTimer = Timer(const Duration(milliseconds: 300), _showOverlay);
+  }
+
+  void _showOverlay() {
+    _showTimer?.cancel();
+    _hideTimer?.cancel();
+
+    // Safety check: if unmounted, don't show overlay
+    if (!mounted) return;
+
+    // Check if the route is the top-most route
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
 
     // If there's another card showing, remove it first
     if (_currentOverlayEntry != null && _currentOverlayEntry != _overlayEntry) {
@@ -89,11 +143,6 @@ class _HoverUserCardState extends State<HoverUserCard> {
               userName: widget.userName,
               avatarUrl: widget.avatarUrl,
               initialUser: _cachedUser,
-              onInit: () {
-                if (_cachedUser == null && !_isLoading) {
-                  _fetchUserInfo();
-                }
-              },
             ),
           ),
         ),
@@ -103,9 +152,16 @@ class _HoverUserCardState extends State<HoverUserCard> {
     overlay.insert(_overlayEntry!);
     _currentOverlayEntry = _overlayEntry;
     _currentHoverState = this;
+
+    // Trigger fetch immediately if needed
+    if (_cachedUser == null && !_isLoading) {
+      _fetchUserInfo();
+    }
   }
 
   void _hideOverlay() {
+    if (!mounted) return;
+    _showTimer?.cancel();
     _hideTimer = Timer(const Duration(milliseconds: 200), () {
       if (_overlayEntry == _currentOverlayEntry) {
         _removeCurrentOverlay();
@@ -141,7 +197,7 @@ class _HoverUserCardState extends State<HoverUserCard> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => _showOverlay(),
+      onEnter: (_) => _scheduleShowOverlay(),
       onExit: (_) => _hideOverlay(),
       child: widget.child,
     );
@@ -153,20 +209,15 @@ class _UserInfoCardWrapper extends StatelessWidget {
   final String userName;
   final String avatarUrl;
   final User? initialUser;
-  final VoidCallback onInit;
 
   const _UserInfoCardWrapper({
     required this.userName,
     required this.avatarUrl,
     this.initialUser,
-    required this.onInit,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Trigger data fetch if needed
-    WidgetsBinding.instance.addPostFrameCallback((_) => onInit());
-
     return UserInfoCard(
       userName: userName,
       avatarUrl: avatarUrl,

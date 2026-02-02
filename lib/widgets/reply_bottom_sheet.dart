@@ -1,0 +1,390 @@
+import 'package:flutter/material.dart';
+import '../api/fishpi_api.dart';
+
+class ReplyBottomSheet extends StatefulWidget {
+  final String articleId;
+  final String? articleTitle;
+  final FishPiApi api;
+  final String? replyToId;
+  final String? replyToName;
+  final String? replyToUserAvatar;
+  final VoidCallback? onSuccess;
+
+  const ReplyBottomSheet({
+    Key? key,
+    required this.articleId,
+    this.articleTitle,
+    required this.api,
+    this.replyToId,
+    this.replyToName,
+    this.replyToUserAvatar,
+    this.onSuccess,
+  }) : super(key: key);
+
+  @override
+  State<ReplyBottomSheet> createState() => _ReplyBottomSheetState();
+}
+
+class _ReplyBottomSheetState extends State<ReplyBottomSheet> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isSubmitting = false;
+  bool _visibleToUser = false; // 仅楼主可见
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _insertText(String text, {int cursorOffset = 0}) {
+    final currentText = _controller.text;
+    final selection = _controller.selection;
+    final start = selection.start < 0 ? currentText.length : selection.start;
+    final end = selection.end < 0 ? currentText.length : selection.end;
+
+    final newText = currentText.replaceRange(start, end, text);
+    _controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + cursorOffset),
+    );
+  }
+
+  void _wrapSelection(String prefix, String suffix) {
+    final currentText = _controller.text;
+    final selection = _controller.selection;
+    final start = selection.start < 0 ? currentText.length : selection.start;
+    final end = selection.end < 0 ? currentText.length : selection.end;
+
+    final selectedText = currentText.substring(start, end);
+    final newText = currentText.replaceRange(
+      start,
+      end,
+      '$prefix$selectedText$suffix',
+    );
+
+    _controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(
+        offset: start + prefix.length + selectedText.length,
+      ),
+    );
+  }
+
+  Future<void> _submit() async {
+    final content = _controller.text.trim();
+    if (content.isEmpty) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.api.postComment(
+        articleId: widget.articleId,
+        content: content,
+        originalCommentId: widget.replyToId,
+        visibleToUser: _visibleToUser,
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onSuccess?.call();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('回复成功')));
+      }
+    } on FishPiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.msg;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildToolbarButton(
+    IconData icon,
+    VoidCallback onPressed, {
+    String? tooltip,
+  }) {
+    return IconButton(
+      icon: Icon(icon, size: 20, color: Colors.grey[700]),
+      onPressed: onPressed,
+      tooltip: tooltip,
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      padding: EdgeInsets.zero,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isReplyToComment = widget.replyToId != null;
+    final title = isReplyToComment
+        ? '回复 ${widget.replyToName}'
+        : (widget.articleTitle != null ? '回复 ${widget.articleTitle}' : '回复帖子');
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.black12)),
+            ),
+            child: Row(
+              children: [
+                if (isReplyToComment && widget.replyToUserAvatar != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: CircleAvatar(
+                      radius: 10,
+                      backgroundImage: NetworkImage(widget.replyToUserAvatar!),
+                    ),
+                  )
+                else
+                  const Icon(Icons.reply, size: 20, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ),
+
+          // Toolbar
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              children: [
+                _buildToolbarButton(
+                  Icons.mood,
+                  () => _insertText(' :) '),
+                  tooltip: '表情',
+                ),
+                _buildToolbarButton(
+                  Icons.format_size,
+                  () => _wrapSelection('## ', ''),
+                  tooltip: '标题',
+                ),
+                _buildToolbarButton(
+                  Icons.format_bold,
+                  () => _wrapSelection('**', '**'),
+                  tooltip: '粗体',
+                ),
+                _buildToolbarButton(
+                  Icons.format_italic,
+                  () => _wrapSelection('*', '*'),
+                  tooltip: '斜体',
+                ),
+                _buildToolbarButton(
+                  Icons.strikethrough_s,
+                  () => _wrapSelection('~~', '~~'),
+                  tooltip: '删除线',
+                ),
+                _buildToolbarButton(
+                  Icons.link,
+                  () => _wrapSelection('[', '](url)'),
+                  tooltip: '链接',
+                ),
+                _buildToolbarButton(
+                  Icons.format_list_bulleted,
+                  () => _insertText('\n- '),
+                  tooltip: '列表',
+                ),
+                _buildToolbarButton(
+                  Icons.check_box_outlined,
+                  () => _insertText('\n- [ ] '),
+                  tooltip: '任务列表',
+                ),
+                _buildToolbarButton(
+                  Icons.code,
+                  () => _wrapSelection('`', '`'),
+                  tooltip: '代码',
+                ),
+                _buildToolbarButton(
+                  Icons.format_quote,
+                  () => _insertText('\n> '),
+                  tooltip: '引用',
+                ),
+                _buildToolbarButton(
+                  Icons.image,
+                  () => _wrapSelection('![', '](url)'),
+                  tooltip: '图片',
+                ),
+                _buildToolbarButton(
+                  Icons.table_chart,
+                  () => _insertText(
+                    '\n| Header | Header |\n| --- | --- |\n| Cell | Cell |',
+                  ),
+                  tooltip: '表格',
+                ),
+              ],
+            ),
+          ),
+
+          // Text Field
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _controller,
+              autofocus: true,
+              maxLines: 6,
+              minLines: 3,
+              onChanged: (_) {
+                if (_errorMessage != null) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
+              decoration: const InputDecoration(
+                hintText: '友善地留下一条评论吧 :)',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+
+          // Footer
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                if (!isReplyToComment) // Only show "Visible to OP" for top-level comments (or maybe replies too? FishPi usually allows it for replies too)
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _visibleToUser = !_visibleToUser;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _visibleToUser
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
+                          size: 20,
+                          color: _visibleToUser ? Colors.amber : Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('仅楼主可见', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                if (isReplyToComment)
+                  // When replying to a comment, we usually don't have "Only visible to OP" option as strictly, but maybe "Only visible to comment author"?
+                  // FishPi API 'commentVisibleToUser' means visible to the article author (OP) only.
+                  // So it still makes sense if the user wants to say something private to the OP in a thread.
+                  // But typically this is used for root comments. I'll keep it available but maybe less emphasized or just available.
+                  // The user request screenshot showed it available.
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _visibleToUser = !_visibleToUser;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _visibleToUser
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
+                          size: 20,
+                          color: _visibleToUser ? Colors.amber : Colors.grey,
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('仅楼主可见', style: TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ),
+
+                const Spacer(),
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('取消', style: TextStyle(color: Colors.grey)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      : const Text('提交'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

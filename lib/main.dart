@@ -6,6 +6,7 @@ import 'api/fishpi_api.dart';
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
 import 'pages/section_page.dart';
+import 'utils/constants.dart';
 
 void main() {
   runApp(
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
     final router = GoRouter(
       initialLocation: '/',
       refreshListenable: auth,
+      observers: [routeObserver],
       redirect: (context, state) {
         final loggedIn = auth.isLoggedIn;
         final loggingIn = state.matchedLocation == '/login';

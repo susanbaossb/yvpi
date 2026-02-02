@@ -7,6 +7,16 @@ import '../models/breezemoon.dart';
 import 'package:dio/dio.dart';
 import 'client.dart';
 
+class FishPiException implements Exception {
+  final int code;
+  final String msg;
+
+  FishPiException(this.code, this.msg);
+
+  @override
+  String toString() => 'FishPiException: code=$code, msg=$msg';
+}
+
 class FishPiApi {
   final ApiClient _client;
 
@@ -53,7 +63,7 @@ class FishPiApi {
         throw Exception(response.data['msg'] ?? 'Failed to get user info');
       }
     } catch (e) {
-      print('getUser error: $e');
+      // print('getUser error: $e');
       rethrow;
     }
   }
@@ -66,9 +76,37 @@ class FishPiApi {
         return User.fromJson(response.data);
       }
     } catch (e) {
-      print('Failed to get user info for $username: $e');
+      // print('Failed to get user info for $username: $e');
     }
     return null;
+  }
+
+  Future<void> followUser(String followingId) async {
+    try {
+      final Response response = await _client.dio.post(
+        '/follow/user',
+        data: {'followingId': followingId},
+      );
+      if (response.data is Map && response.data['code'] != 0) {
+        throw Exception(response.data['msg'] ?? '关注失败');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> unfollowUser(String followingId) async {
+    try {
+      final Response response = await _client.dio.post(
+        '/unfollow/user',
+        data: {'followingId': followingId},
+      );
+      if (response.data is Map && response.data['code'] != 0) {
+        throw Exception(response.data['msg'] ?? '取消关注失败');
+      }
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<List<ArticleSummary>> getRecentArticles({
@@ -148,7 +186,7 @@ class FishPiApi {
       }
       throw Exception(response.data['msg'] ?? 'Failed to load article detail');
     } catch (e) {
-      print('getArticleDetail error: $e');
+      // print('getArticleDetail error: $e');
       rethrow;
     }
   }
@@ -189,7 +227,7 @@ class FishPiApi {
         // Server error (often happens if not logged in or server issue), just return 0
         return 0.0;
       }
-      print('getLiveness error: $e');
+      // print('getLiveness error: $e');
       return 0.0;
     }
   }
@@ -229,7 +267,7 @@ class FishPiApi {
       }
       return [];
     } catch (e) {
-      print('getBreezeMoons error: $e');
+      // print('getBreezeMoons error: $e');
       return [];
     }
   }
@@ -243,7 +281,7 @@ class FishPiApi {
       }
       return null;
     } catch (e) {
-      print('getChatRoomNode error: $e');
+      // print('getChatRoomNode error: $e');
       return null;
     }
   }
@@ -305,8 +343,53 @@ class FishPiApi {
       }
       return [];
     } catch (e) {
-      print('getArticleComments error: $e');
+      // print('getArticleComments error: $e');
       return [];
+    }
+  }
+
+  // Post a comment
+  Future<void> postComment({
+    required String articleId,
+    required String content,
+    String? originalCommentId,
+    bool visibleToUser = false,
+  }) async {
+    try {
+      final data = {
+        'articleId': articleId,
+        'commentContent': content,
+        if (visibleToUser) 'commentVisibleToUser': true,
+      };
+
+      Response response;
+      if (originalCommentId != null && originalCommentId.isNotEmpty) {
+        // User instruction: 如果是回复评论调用PUT /comment/{评论oId}
+        response = await _client.dio.put(
+          '/comment/$originalCommentId',
+          data: data,
+        );
+      } else {
+        // User instruction: 如果是直接评论调用POST /comment
+        response = await _client.dio.post('/comment', data: data);
+      }
+
+      if (response.data['code'] != 0) {
+        throw FishPiException(
+          response.data['code'],
+          response.data['msg'] ?? '回复失败',
+        );
+      }
+    } on DioException catch (e) {
+      if (e.response?.data is Map) {
+        final data = e.response!.data;
+        if (data['code'] != null) {
+          throw FishPiException(data['code'], data['msg'] ?? '请求失败');
+        }
+      }
+      rethrow;
+    } catch (e) {
+      rethrow;
     }
   }
 }
