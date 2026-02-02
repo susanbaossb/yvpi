@@ -1,3 +1,10 @@
+/// 文章详情页面
+///
+/// 展示文章完整内容，包含：
+/// - 顶部导航栏与文章元数据（标题、作者、标签）
+/// - HTML 内容渲染（支持图片预览、代码高亮）
+/// - 右侧悬浮目录导航（TOC，仅在大屏显示）
+/// - 底部评论列表与回复输入框
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';

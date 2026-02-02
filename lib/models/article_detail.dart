@@ -1,3 +1,7 @@
+/// 文章详情模型
+///
+/// 用于文章详情页展示，包含文章完整 HTML 内容、
+/// 作者详细信息、标签、浏览量、点赞数及评论列表等完整元数据。
 class ArticleDetail {
   final String id;
   final String title;

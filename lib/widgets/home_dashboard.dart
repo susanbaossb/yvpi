@@ -1,3 +1,10 @@
+/// 首页仪表盘侧边栏组件
+///
+/// 展示社区实时统计数据，包括：
+/// - 用户个人活跃度与签到入口
+/// - 社区总签到榜
+/// - 在线用户时长榜
+/// - 聊天室入口链接
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';

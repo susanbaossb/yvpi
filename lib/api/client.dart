@@ -1,3 +1,7 @@
+/// API 客户端配置类
+///
+/// 封装 Dio 实例，处理基础 HTTP 配置（BaseURL, User-Agent, Cookie），
+/// 提供单例访问模式，并包含请求拦截器以自动附加 apiKey。
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
 import '../utils/api_logger.dart';

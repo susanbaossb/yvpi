@@ -1,3 +1,7 @@
+/// 清风明月 (BreezeMoon) 内容模型
+///
+/// 对应社区的“清风明月”板块（类似朋友圈/微博动态），
+/// 包含内容文本、发布者信息、发布时间、来源及评论数。
 class BreezeMoon {
   final String oId;
   final String content;

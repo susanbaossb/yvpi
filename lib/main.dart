@@ -1,3 +1,7 @@
+/// 应用程序入口文件
+///
+/// 负责初始化应用配置、设置全局 Provider (如 AuthProvider)、
+/// 配置路由监听 (RouteObserver) 以及启动 Material App。
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';

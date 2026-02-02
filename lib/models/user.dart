@@ -1,3 +1,7 @@
+/// 用户信息模型
+///
+/// 定义用户的基本资料（用户名、昵称、头像）及扩展属性（角色、积分、是否可关注、在线状态等）。
+/// 包含 json_serializable 生成的序列化代码。
 import 'package:json_annotation/json_annotation.dart';
 
 part 'user.g.dart';

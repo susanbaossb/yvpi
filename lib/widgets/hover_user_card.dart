@@ -1,3 +1,9 @@
+/// 悬浮用户卡片容器组件
+///
+/// 封装了鼠标悬停交互逻辑：
+/// - 当鼠标悬停在子组件（通常是头像）上时，显示详细用户信息卡片 (UserInfoCard)。
+/// - 处理显示/隐藏的防抖延迟。
+/// - 监听路由变化，在页面跳转时自动隐藏悬浮卡片。
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

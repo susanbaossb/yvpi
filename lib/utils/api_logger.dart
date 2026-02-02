@@ -1,3 +1,7 @@
+/// API 日志工具
+///
+/// 负责记录网络请求过程中的错误信息到本地文件系统。
+/// 提供日志写入、读取和清除功能，便于调试和问题排查。
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';

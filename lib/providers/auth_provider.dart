@@ -1,3 +1,10 @@
+/// 认证状态管理 Provider
+///
+/// 管理全局用户认证状态，包括：
+/// - 用户登录/登出逻辑
+/// - 存储和更新当前用户信息 (User)
+/// - 持久化存储 apiKey
+/// - 提供 FishPiApi 实例供全局调用
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../api/fishpi_api.dart';

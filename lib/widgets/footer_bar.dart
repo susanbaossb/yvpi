@@ -1,3 +1,7 @@
+/// 页面底部栏组件
+///
+/// 显示应用版本信息、版权声明以及可能的底部导航链接。
+/// 通常固定在页面最底部。
 import 'package:flutter/material.dart';
 
 class FooterBar extends StatelessWidget {

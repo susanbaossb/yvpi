@@ -1,3 +1,10 @@
+/// 登录页面
+///
+/// 处理用户登录流程：
+/// - 用户名/邮箱与密码输入
+/// - MFA 验证码输入（可选）
+/// - 调用 AuthProvider 执行登录操作
+/// - 登录成功后跳转至首页
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';

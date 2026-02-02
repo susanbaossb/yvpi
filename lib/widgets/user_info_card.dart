@@ -1,3 +1,10 @@
+/// 用户信息卡片展示组件
+///
+/// 展示用户的详细资料，包括：
+/// - 头像、背景图、昵称、简介
+/// - 用户角色标签、在线状态
+/// - 关注/取消关注按钮（支持乐观 UI 更新）
+/// - 私信入口
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';

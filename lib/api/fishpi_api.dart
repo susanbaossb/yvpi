@@ -1,3 +1,10 @@
+/// 摸鱼派 (FishPi) 核心 API 业务类
+///
+/// 封装了所有与后端交互的业务接口，包括：
+/// - 用户认证 (登录, 获取用户信息)
+/// - 内容获取 (文章列表, 文章详情, 清风明月, 聊天室)
+/// - 交互操作 (点赞, 关注, 评论, 发送消息)
+/// - 榜单数据 (签到榜, 在线榜)
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import '../models/user.dart';
@@ -22,7 +29,7 @@ class FishPiApi {
 
   FishPiApi(this._client);
 
-  // Login to get apiKey
+  // 登录获取 apiKey
   Future<String> login(
     String nameOrEmail,
     String password, {
@@ -52,7 +59,7 @@ class FishPiApi {
     }
   }
 
-  // Get current user info
+  // 获取当前登录用户信息
   Future<User> getUser() async {
     try {
       final Response response = await _client.dio.get('/api/user');
@@ -68,7 +75,7 @@ class FishPiApi {
     }
   }
 
-  // Get specific user info (real implementation)
+  // 获取指定用户信息
   Future<User?> getUserInfo(String username) async {
     try {
       final Response response = await _client.dio.get('/user/$username');
@@ -81,6 +88,7 @@ class FishPiApi {
     return null;
   }
 
+  // 关注用户
   Future<void> followUser(String followingId) async {
     try {
       final Response response = await _client.dio.post(
@@ -95,6 +103,7 @@ class FishPiApi {
     }
   }
 
+  // 取消关注用户
   Future<void> unfollowUser(String followingId) async {
     try {
       final Response response = await _client.dio.post(
@@ -109,6 +118,7 @@ class FishPiApi {
     }
   }
 
+  // 获取最新文章列表
   Future<List<ArticleSummary>> getRecentArticles({
     int page = 1,
     int size = 20,
@@ -134,6 +144,7 @@ class FishPiApi {
     }
   }
 
+  // 获取热门文章列表
   Future<List<ArticleSummary>> getHotArticles({
     int page = 1,
     int size = 20,
@@ -178,6 +189,7 @@ class FishPiApi {
     };
   }
 
+  // 获取文章详情
   Future<ArticleDetail> getArticleDetail(String articleId) async {
     try {
       final response = await _client.dio.get('/api/article/$articleId');
@@ -191,6 +203,7 @@ class FishPiApi {
     }
   }
 
+  // 获取模拟签到排行榜数据
   Future<List<Map<String, dynamic>>> getMockCheckinRank() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
@@ -201,6 +214,7 @@ class FishPiApi {
     ];
   }
 
+  // 获取模拟在线时长排行榜数据
   Future<List<Map<String, dynamic>>> getMockOnlineRank() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
@@ -211,7 +225,7 @@ class FishPiApi {
     ];
   }
 
-  // Get user liveness
+  // 获取用户活跃度
   Future<double> getLiveness() async {
     try {
       final response = await _client.dio.get('/user/liveness');
@@ -232,11 +246,11 @@ class FishPiApi {
     }
   }
 
-  // Collect yesterday's reward
-  // Returns the reward amount.
-  // -1: Already collected
-  // 0: No reward available
-  // > 0: Reward amount collected
+  // 领取昨日活跃度奖励
+  // 返回值：
+  // -1: 已领取
+  // 0: 无奖励可领取
+  // > 0: 成功领取的奖励金额
   Future<int> collectYesterdayReward() async {
     try {
       final response = await _client.dio.get(
@@ -254,7 +268,7 @@ class FishPiApi {
     }
   }
 
-  // Get BreezeMoon list
+  // 获取清风明月（BreezeMoon）列表
   Future<List<BreezeMoon>> getBreezeMoons({int page = 1, int size = 20}) async {
     try {
       final response = await _client.dio.get(
@@ -272,7 +286,7 @@ class FishPiApi {
     }
   }
 
-  // Get chat room node address
+  // 获取聊天室节点地址
   Future<String?> getChatRoomNode() async {
     try {
       final Response response = await _client.dio.get('/chat-room/node/get');
@@ -286,7 +300,7 @@ class FishPiApi {
     }
   }
 
-  // Send chat message
+  // 发送聊天室消息
   Future<void> sendChatMessage(String content) async {
     try {
       final response = await _client.dio.post(
@@ -301,7 +315,7 @@ class FishPiApi {
     }
   }
 
-  // Send BreezeMoon
+  // 发布清风明月
   Future<void> sendBreezeMoon(String content) async {
     try {
       final response = await _client.dio.post(
@@ -316,6 +330,7 @@ class FishPiApi {
     }
   }
 
+  // 获取文章评论列表
   Future<List<ArticleComment>> getArticleComments(
     String articleId, {
     int page = 1,
@@ -348,7 +363,7 @@ class FishPiApi {
     }
   }
 
-  // Post a comment
+  // 发布或回复评论
   Future<void> postComment({
     required String articleId,
     required String content,

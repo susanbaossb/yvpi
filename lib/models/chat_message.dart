@@ -1,3 +1,6 @@
+/// 聊天室消息模型
+///
+/// 定义聊天室消息的数据结构，包含消息 ID、内容、发送者信息及时间戳。
 class ChatMessage {
   final String oId;
   final String content;

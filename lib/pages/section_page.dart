@@ -1,3 +1,7 @@
+/// 分区通用页面
+///
+/// 用于展示特定板块的内容列表，如“热门”、“关注”、“聊天室”等。
+/// 结构类似于首页，但专注于特定分类的内容展示。
 import 'package:flutter/material.dart';
 import '../widgets/header_bar.dart';
 import '../widgets/footer_bar.dart';

@@ -1,3 +1,9 @@
+/// 应用程序首页
+///
+/// 采用响应式布局，包含：
+/// - 顶部导航栏 (HeaderBar)
+/// - 左侧/主内容区域：展示最新文章、热门文章列表及“清风明月”动态
+/// - 右侧侧边栏 (HomeDashboard)：展示活跃度、签到榜、在线榜及聊天室入口
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';

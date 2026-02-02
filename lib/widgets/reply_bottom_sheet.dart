@@ -1,3 +1,9 @@
+/// 评论/回复输入框底部弹窗组件
+///
+/// 提供一个从底部弹出的文本输入区域，用于：
+/// - 发布文章评论
+/// - 回复他人的评论
+/// - 支持输入内容验证与发送状态反馈
 import 'package:flutter/material.dart';
 import '../api/fishpi_api.dart';
 

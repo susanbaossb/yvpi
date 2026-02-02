@@ -1,3 +1,7 @@
+/// 清风明月展示组件
+///
+/// 用于渲染单条“清风明月”动态内容，
+/// 包含发布者头像、昵称、内容文本、发布时间及评论数统计。
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api/fishpi_api.dart';

@@ -1,3 +1,10 @@
+/// 页面顶部导航栏组件
+///
+/// 包含：
+/// - 应用 Logo 与标题
+/// - 主要功能导航菜单 (首页, 热门, 关注等)
+/// - 搜索输入框
+/// - 用户个人中心入口 (头像, 下拉菜单)
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';

@@ -1,3 +1,10 @@
+/// 聊天室组件
+///
+/// 实现实时聊天功能，包含：
+/// - WebSocket 消息接收与展示
+/// - 消息列表自动滚动与分页加载
+/// - 消息输入框与发送逻辑
+/// - 红包消息类型的特殊渲染支持
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
