@@ -43,6 +43,9 @@ dependencies:
   path_provider: ^2.1.5
   web_socket_channel: ^3.0.3
   flutter_widget_from_html: ^0.17.1
+  extended_text_field: ^16.0.2
+  file_picker: ^10.3.10
+  pasteboard: ^0.4.0
 
 dev_dependencies:
   flutter_test:

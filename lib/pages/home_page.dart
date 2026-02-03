@@ -253,12 +253,34 @@ class _ArticleColumn extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                if (it.articleCommentCount != null)
-                                  Text(
-                                    '${it.articleCommentCount}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
+                                if (it.articleViewCntDisplayFormat != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.whatshot,
+                                          size: 12,
+                                          color: Colors.red,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          it.articleViewCntDisplayFormat!,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                               ],
                             ),

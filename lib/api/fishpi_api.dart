@@ -118,6 +118,61 @@ class FishPiApi {
     }
   }
 
+  // 获取用户常用表情
+  Future<List<String>> getUserEmotions() async {
+    try {
+      final Response response = await _client.dio.get('/users/emotions');
+      if (response.data is Map && response.data['code'] == 0) {
+        final data = response.data['data'];
+        if (data is List) {
+          final List<String> emojis = [];
+          for (final item in data) {
+            if (item is Map && item.isNotEmpty) {
+              final value = item.values.first?.toString();
+              if (value != null && value.isNotEmpty) {
+                emojis.add(value);
+              } else {
+                final key = item.keys.first?.toString();
+                if (key != null && key.isNotEmpty) {
+                  // 部分表情（如 trollface）返回空值，需要拼接默认图片地址
+                  emojis.add('https://file.fishpi.cn/emoji/graphics/$key.png');
+                }
+              }
+            }
+          }
+          return emojis;
+        }
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 上传文件
+  Future<String> upload(String filePath) async {
+    try {
+      final formData = FormData.fromMap({
+        'file[]': await MultipartFile.fromFile(filePath),
+      });
+
+      final response = await _client.dio.post('/upload', data: formData);
+
+      if (response.data is Map && response.data['code'] == 0) {
+        final data = response.data['data'];
+        if (data != null && data['succMap'] != null) {
+          final succMap = data['succMap'] as Map;
+          if (succMap.isNotEmpty) {
+            return succMap.values.first.toString();
+          }
+        }
+      }
+      throw Exception(response.data['msg'] ?? '上传失败');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // 获取最新文章列表
   Future<List<ArticleSummary>> getRecentArticles({
     int page = 1,
@@ -186,6 +241,9 @@ class FishPiApi {
           json['thumbnailURL'],
       'articleCommentCount':
           json['articleCommentCount'] ?? json['comments'] ?? 0,
+      'articleViewCntDisplayFormat':
+          json['articleViewCntDisplayFormat'] ??
+          json['articleViewCount']?.toString(),
     };
   }
 
@@ -403,6 +461,38 @@ class FishPiApi {
         }
       }
       rethrow;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 点赞/取消点赞文章
+  // 返回: 0: 已取消点赞, -1: 点赞成功
+  Future<int> voteArticle(String articleId) async {
+    try {
+      final response = await _client.dio.post(
+        '/vote/up/article',
+        data: {'dataId': articleId},
+      );
+      if (response.data['code'] == 0) {
+        return response.data['type'];
+      }
+      throw Exception(response.data['msg'] ?? '操作失败');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 感谢文章
+  Future<void> rewardArticle(String articleId) async {
+    try {
+      final response = await _client.dio.post(
+        '/article/thank',
+        queryParameters: {'articleId': articleId},
+      );
+      if (response.data['code'] != 0) {
+        throw Exception(response.data['msg'] ?? '感谢失败');
+      }
     } catch (e) {
       rethrow;
     }

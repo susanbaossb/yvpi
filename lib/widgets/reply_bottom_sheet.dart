@@ -1,12 +1,19 @@
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:pasteboard/pasteboard.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:extended_text_field/extended_text_field.dart';
+import 'special_text/emoji_text.dart';
+import '../api/fishpi_api.dart';
+
 /// 评论/回复输入框底部弹窗组件
 ///
 /// 提供一个从底部弹出的文本输入区域，用于：
 /// - 发布文章评论
 /// - 回复他人的评论
 /// - 支持输入内容验证与发送状态反馈
-import 'package:flutter/material.dart';
-import '../api/fishpi_api.dart';
-
 class ReplyBottomSheet extends StatefulWidget {
   final String articleId;
   final String? articleTitle;
@@ -17,7 +24,7 @@ class ReplyBottomSheet extends StatefulWidget {
   final VoidCallback? onSuccess;
 
   const ReplyBottomSheet({
-    Key? key,
+    super.key,
     required this.articleId,
     this.articleTitle,
     required this.api,
@@ -25,7 +32,7 @@ class ReplyBottomSheet extends StatefulWidget {
     this.replyToName,
     this.replyToUserAvatar,
     this.onSuccess,
-  }) : super(key: key);
+  });
 
   @override
   State<ReplyBottomSheet> createState() => _ReplyBottomSheetState();
@@ -33,14 +40,146 @@ class ReplyBottomSheet extends StatefulWidget {
 
 class _ReplyBottomSheetState extends State<ReplyBottomSheet> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   bool _isSubmitting = false;
+  bool _isUploading = false;
   bool _visibleToUser = false; // 仅楼主可见
   String? _errorMessage;
+  bool _showEmojis = false;
+  bool _isLoadingEmojis = false;
+  List<String> _emojis = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) {
+      setState(() {
+        _showEmojis = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadEmojis() async {
+    if (_emojis.isNotEmpty) return;
+
+    setState(() {
+      _isLoadingEmojis = true;
+    });
+
+    try {
+      final emojis = await widget.api.getUserEmotions();
+      if (mounted) {
+        setState(() {
+          _emojis = emojis;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingEmojis = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.any);
+
+      if (result != null && result.files.single.path != null) {
+        await _uploadFile(result.files.single.path!);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = '选择文件失败: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _uploadFile(String path) async {
+    setState(() {
+      _isUploading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final url = await widget.api.upload(path);
+      if (mounted) {
+        _onEmojiSelected(url);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handlePaste() async {
+    try {
+      final imageBytes = await Pasteboard.image;
+      if (imageBytes != null) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File(
+          '${tempDir.path}/paste_${DateTime.now().millisecondsSinceEpoch}.png',
+        );
+        await tempFile.writeAsBytes(imageBytes);
+        await _uploadFile(tempFile.path);
+        return;
+      }
+
+      final files = await Pasteboard.files();
+      if (files.isNotEmpty) {
+        for (var path in files) {
+          await _uploadFile(path);
+        }
+        return;
+      }
+
+      // Fallback to text paste
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data?.text != null) {
+        _insertText(data!.text!);
+      }
+    } catch (e) {
+      // Ignore paste errors
+    }
+  }
+
+  Widget _buildEmojiItem(String emoji) {
+    if (emoji.startsWith('http')) {
+      return Image.network(emoji, width: 32, height: 32, fit: BoxFit.contain);
+    }
+    return Center(child: Text(emoji, style: const TextStyle(fontSize: 20)));
+  }
+
+  void _onEmojiSelected(String emoji) {
+    if (emoji.startsWith('http')) {
+      _insertText(' ![]($emoji) ');
+    } else {
+      _insertText(' $emoji ');
+    }
   }
 
   void _insertText(String text, {int cursorOffset = 0}) {
@@ -52,7 +191,9 @@ class _ReplyBottomSheetState extends State<ReplyBottomSheet> {
     final newText = currentText.replaceRange(start, end, text);
     _controller.value = TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: start + cursorOffset),
+      selection: TextSelection.collapsed(
+        offset: start + cursorOffset + text.length,
+      ),
     );
   }
 
@@ -123,9 +264,18 @@ class _ReplyBottomSheetState extends State<ReplyBottomSheet> {
 
   Widget _buildToolbarButton(
     IconData icon,
-    VoidCallback onPressed, {
+    VoidCallback? onPressed, {
     String? tooltip,
+    bool isLoading = false,
   }) {
+    if (isLoading) {
+      return Container(
+        width: 32,
+        height: 32,
+        padding: const EdgeInsets.all(8),
+        child: const CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
     return IconButton(
       icon: Icon(icon, size: 20, color: Colors.grey[700]),
       onPressed: onPressed,
@@ -208,11 +358,15 @@ class _ReplyBottomSheetState extends State<ReplyBottomSheet> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
               children: [
-                _buildToolbarButton(
-                  Icons.mood,
-                  () => _insertText(' :) '),
-                  tooltip: '表情',
-                ),
+                _buildToolbarButton(Icons.mood, () {
+                  setState(() {
+                    _showEmojis = !_showEmojis;
+                  });
+                  if (_showEmojis) {
+                    FocusScope.of(context).unfocus();
+                    _loadEmojis();
+                  }
+                }, tooltip: '表情'),
                 _buildToolbarButton(
                   Icons.format_size,
                   () => _wrapSelection('## ', ''),
@@ -260,8 +414,9 @@ class _ReplyBottomSheetState extends State<ReplyBottomSheet> {
                 ),
                 _buildToolbarButton(
                   Icons.image,
-                  () => _wrapSelection('![', '](url)'),
-                  tooltip: '图片',
+                  _isUploading ? null : _pickAndUploadImage,
+                  tooltip: '上传图片',
+                  isLoading: _isUploading,
                 ),
                 _buildToolbarButton(
                   Icons.table_chart,
@@ -274,25 +429,64 @@ class _ReplyBottomSheetState extends State<ReplyBottomSheet> {
             ),
           ),
 
+          // Emoji Picker
+          if (_showEmojis)
+            Container(
+              height: 200,
+              color: Colors.grey[50],
+              child: _isLoadingEmojis
+                  ? const Center(child: CircularProgressIndicator())
+                  : _emojis.isEmpty
+                  ? const Center(child: Text('暂无常用表情'))
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 50,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                          ),
+                      itemCount: _emojis.length,
+                      itemBuilder: (context, index) {
+                        final emoji = _emojis[index];
+                        return InkWell(
+                          onTap: () => _onEmojiSelected(emoji),
+                          borderRadius: BorderRadius.circular(4),
+                          child: _buildEmojiItem(emoji),
+                        );
+                      },
+                    ),
+            ),
+
           // Text Field
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _controller,
-              autofocus: true,
-              maxLines: 6,
-              minLines: 3,
-              onChanged: (_) {
-                if (_errorMessage != null) {
-                  setState(() {
-                    _errorMessage = null;
-                  });
-                }
+            child: CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.keyV, control: true):
+                    _handlePaste,
+                const SingleActivator(LogicalKeyboardKey.keyV, meta: true):
+                    _handlePaste,
               },
-              decoration: const InputDecoration(
-                hintText: '友善地留下一条评论吧 :)',
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              child: ExtendedTextField(
+                specialTextSpanBuilder: EmojiTextSpanBuilder(),
+                controller: _controller,
+                focusNode: _focusNode,
+                autofocus: true,
+                maxLines: 6,
+                minLines: 3,
+                onChanged: (_) {
+                  if (_errorMessage != null) {
+                    setState(() {
+                      _errorMessage = null;
+                    });
+                  }
+                },
+                decoration: const InputDecoration(
+                  hintText: '友善地留下一条评论吧 :)',
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                ),
               ),
             ),
           ),

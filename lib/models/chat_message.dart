@@ -5,6 +5,7 @@ class ChatMessage {
   final String oId;
   final String content;
   final String userName;
+  final String userNickname;
   final String userAvatarURL;
   final String time;
   final String type; // 'msg', 'online', 'redPacketStatus', etc.
@@ -13,6 +14,7 @@ class ChatMessage {
     required this.oId,
     required this.content,
     required this.userName,
+    this.userNickname = '',
     required this.userAvatarURL,
     required this.time,
     required this.type,
@@ -23,6 +25,7 @@ class ChatMessage {
       oId: json['oId'] ?? '',
       content: json['content'] ?? '',
       userName: json['userName'] ?? '',
+      userNickname: json['userNickname'] ?? '',
       userAvatarURL: json['userAvatarURL'] ?? '',
       time: json['time'] ?? '',
       type: json['type'] ?? 'msg',

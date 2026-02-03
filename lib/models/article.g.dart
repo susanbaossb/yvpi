@@ -14,6 +14,8 @@ ArticleSummary _$ArticleSummaryFromJson(Map<String, dynamic> json) =>
       authorName: json['authorName'] as String?,
       thumbnailURL: json['thumbnailURL'] as String?,
       articleCommentCount: (json['articleCommentCount'] as num?)?.toInt(),
+      articleViewCntDisplayFormat:
+          json['articleViewCntDisplayFormat'] as String?,
     );
 
 Map<String, dynamic> _$ArticleSummaryToJson(ArticleSummary instance) =>
@@ -24,4 +26,5 @@ Map<String, dynamic> _$ArticleSummaryToJson(ArticleSummary instance) =>
       'authorName': instance.authorName,
       'thumbnailURL': instance.thumbnailURL,
       'articleCommentCount': instance.articleCommentCount,
+      'articleViewCntDisplayFormat': instance.articleViewCntDisplayFormat,
     };

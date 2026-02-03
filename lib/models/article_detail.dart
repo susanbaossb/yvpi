@@ -13,8 +13,12 @@ class ArticleDetail {
   final List<String> tags;
   final int viewCount;
   final int likeCount;
+  final int badCount;
+  final int watchCount;
   final int commentCount;
   final int collectCount;
+  final int rewardCount;
+  final bool isReward;
   final List<ArticleComment> comments;
   final List<SimpleUser> rewardedUsers;
   final List<SimpleUser> participatingUsers;
@@ -30,8 +34,12 @@ class ArticleDetail {
     required this.tags,
     required this.viewCount,
     required this.likeCount,
+    this.badCount = 0,
+    this.watchCount = 0,
     required this.commentCount,
     required this.collectCount,
+    this.rewardCount = 0,
+    this.isReward = false,
     required this.comments,
     this.rewardedUsers = const [],
     this.participatingUsers = const [],
@@ -58,13 +66,61 @@ class ArticleDetail {
       tags: (article['articleTags'] as String?)?.split(',') ?? [],
       viewCount: article['articleViewCount'] ?? 0,
       likeCount: article['articleGoodCnt'] ?? 0,
+      badCount: article['articleBadCnt'] ?? 0,
+      watchCount: article['articleWatchCnt'] ?? 0,
       commentCount: article['articleCommentCount'] ?? 0,
       collectCount: article['articleCollectCnt'] ?? 0,
+      rewardCount: article['articleThankCnt'] ?? 0,
+      isReward: article['thanked'] ?? false,
       comments: commentsList.map((e) => ArticleComment.fromJson(e)).toList(),
       rewardedUsers: rewards.map((e) => SimpleUser.fromJson(e)).toList(),
       participatingUsers: participants
           .map((e) => SimpleUser.fromJson(e))
           .toList(),
+    );
+  }
+
+  ArticleDetail copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? userNickname,
+    String? userName,
+    String? authorAvatar,
+    String? timeAgo,
+    List<String>? tags,
+    int? viewCount,
+    int? likeCount,
+    int? badCount,
+    int? watchCount,
+    int? commentCount,
+    int? collectCount,
+    int? rewardCount,
+    bool? isReward,
+    List<ArticleComment>? comments,
+    List<SimpleUser>? rewardedUsers,
+    List<SimpleUser>? participatingUsers,
+  }) {
+    return ArticleDetail(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      userNickname: userNickname ?? this.userNickname,
+      userName: userName ?? this.userName,
+      authorAvatar: authorAvatar ?? this.authorAvatar,
+      timeAgo: timeAgo ?? this.timeAgo,
+      tags: tags ?? this.tags,
+      viewCount: viewCount ?? this.viewCount,
+      likeCount: likeCount ?? this.likeCount,
+      badCount: badCount ?? this.badCount,
+      watchCount: watchCount ?? this.watchCount,
+      commentCount: commentCount ?? this.commentCount,
+      collectCount: collectCount ?? this.collectCount,
+      rewardCount: rewardCount ?? this.rewardCount,
+      isReward: isReward ?? this.isReward,
+      comments: comments ?? this.comments,
+      rewardedUsers: rewardedUsers ?? this.rewardedUsers,
+      participatingUsers: participatingUsers ?? this.participatingUsers,
     );
   }
 }

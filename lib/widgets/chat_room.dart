@@ -266,10 +266,12 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                               Row(
                                 children: [
                                   Text(
-                                    msg.userName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                    msg.userNickname.isNotEmpty
+                                        ? '${msg.userNickname}（${msg.userName}）'
+                                        : msg.userName,
+                                    style: TextStyle(
                                       fontSize: 12,
+                                      color: Colors.grey[600],
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -278,7 +280,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                         ? msg.time.substring(11, 16)
                                         : msg.time, // Safe substring
                                     style: TextStyle(
-                                      color: Colors.grey[600],
+                                      color: Colors.grey[400],
                                       fontSize: 10,
                                     ),
                                   ),
@@ -290,7 +292,10 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                   RegExp(r'<[^>]*>'),
                                   '',
                                 ), // Simple HTML strip
-                                style: const TextStyle(fontSize: 13),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black87,
+                                ),
                               ),
                             ],
                           ),
