@@ -7,11 +7,9 @@
 /// - 底部评论列表与回复输入框
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../models/article_detail.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/header_bar.dart';
-import '../widgets/hover_user_card.dart';
 import '../widgets/reply_bottom_sheet.dart';
 import '../widgets/article_content.dart';
 import '../widgets/article_comments.dart';
@@ -222,7 +220,9 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
             if (_currentPage == 1) {
               _allLoadedCommentIds.clear();
               uniqueComments.addAll(comments);
-              for (var c in comments) _allLoadedCommentIds.add(c.id);
+              for (var c in comments) {
+                _allLoadedCommentIds.add(c.id);
+              }
             } else {
               bool allDuplicates = true;
               for (var c in comments) {
@@ -275,7 +275,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
           _loadingMore = false; // Also reset loading more on error
         });
       }
-      print('Failed to load comments: $e');
+      debugPrint('Failed to load comments: $e');
     }
   }
 
@@ -397,7 +397,7 @@ class _ArticleDetailPageState extends State<ArticleDetailPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

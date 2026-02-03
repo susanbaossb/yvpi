@@ -38,11 +38,13 @@ class _BreezeMoonWidgetState extends State<BreezeMoonWidget> {
 
     try {
       await context.read<FishPiApi>().sendBreezeMoon(content);
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('发布成功')));
       _refresh();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('发布失败: $e')));

@@ -56,9 +56,14 @@ class User {
 int? _stringToInt(dynamic value) {
   if (value == null) return null;
   if (value is int) return value;
+  if (value is num) return value.toInt();
   if (value is String) {
-    if (value.isEmpty) return null;
-    return int.tryParse(value);
+    final s = value.trim();
+    if (s.isEmpty || s.toLowerCase() == 'null') return null;
+    final i = int.tryParse(s);
+    if (i != null) return i;
+    final d = double.tryParse(s);
+    if (d != null) return d.toInt();
   }
   return null;
 }

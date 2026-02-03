@@ -19,11 +19,13 @@ class AuthProvider extends ChangeNotifier {
   User? _user;
   String? _apiKey;
   bool _isLoading = false;
+  bool _isInitialized = false;
 
   User? get user => _user;
   String? get apiKey => _apiKey;
   bool get isLoggedIn => _apiKey != null;
   bool get isLoading => _isLoading;
+  bool get isInitialized => _isInitialized;
   FishPiApi get api => _fishPiApi;
 
   AuthProvider() : _apiClient = ApiClient() {
@@ -32,12 +34,30 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _loadApiKey() async {
+    debugPrint('AuthProvider: _loadApiKey start ${DateTime.now()}');
+    final stopwatch = Stopwatch()..start();
     final prefs = await SharedPreferences.getInstance();
+    debugPrint(
+      'AuthProvider: SharedPreferences loaded in ${stopwatch.elapsedMilliseconds}ms',
+    );
     _apiKey = prefs.getString(AppConstants.apiKey);
     if (_apiKey != null) {
+      debugPrint('AuthProvider: apiKey found, refreshing user...');
       _apiClient.setApiKey(_apiKey);
+      // Notify listeners immediately so the app redirects to Home without waiting for the network call
+      _isInitialized = true;
+      notifyListeners();
       await refreshUser();
+    } else {
+      debugPrint('AuthProvider: apiKey not found');
+      // If we want to ensure the app knows initialization is done (even if no login), we might want to signal that.
+      // But _isLoading is for login action.
+      _isInitialized = true;
+      notifyListeners();
     }
+    debugPrint(
+      'AuthProvider: _loadApiKey done in ${stopwatch.elapsedMilliseconds}ms',
+    );
   }
 
   Future<void> login(
@@ -67,8 +87,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> refreshUser() async {
+    debugPrint('AuthProvider: refreshUser start ${DateTime.now()}');
+    final stopwatch = Stopwatch()..start();
     try {
       _user = await _fishPiApi.getUser();
+      debugPrint(
+        'AuthProvider: getUser done in ${stopwatch.elapsedMilliseconds}ms',
+      );
       notifyListeners();
     } catch (e) {
       // If token is invalid, maybe logout?

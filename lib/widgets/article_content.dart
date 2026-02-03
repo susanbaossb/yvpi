@@ -36,6 +36,7 @@ class ArticleContentWidget extends StatelessWidget {
             Center(
               child: SelectableText(
                 article.title,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -336,48 +337,11 @@ class ArticleContentWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: color.withOpacity(0.5), width: 0.5),
+        border: Border.all(color: color.withAlpha(128), width: 0.5),
       ),
       child: Text(text, style: TextStyle(color: color, fontSize: 10)),
-    );
-  }
-
-  Widget _buildActionButton(
-    IconData icon,
-    String label,
-    int count, {
-    VoidCallback? onTap,
-    bool isActive = false,
-  }) {
-    final color = isActive ? Colors.red : Colors.grey[600];
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.red.withOpacity(0.1) : Colors.white,
-          border: Border.all(color: isActive ? Colors.red : Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 6),
-            Text(
-              count > 0 ? '$label $count' : label,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

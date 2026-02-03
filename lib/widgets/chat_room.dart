@@ -46,7 +46,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
       final nodeUrl = await api.getChatRoomNode();
 
       if (nodeUrl == null) {
-        print('Failed to get chat room node');
+        debugPrint('Failed to get chat room node');
         return;
       }
 
@@ -60,15 +60,15 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
           _handleMessage(message);
         },
         onError: (error) {
-          print('WebSocket error: $error');
+          debugPrint('WebSocket error: $error');
           // Reconnect logic could go here
         },
         onDone: () {
-          print('WebSocket closed');
+          debugPrint('WebSocket closed');
         },
       );
     } catch (e) {
-      print('WebSocket connection failed: $e');
+      debugPrint('WebSocket connection failed: $e');
     }
   }
 
@@ -90,9 +90,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
 
           // Limit message count
           if (_messages.length > 100) {
-            final removedItem = _messages.removeLast();
-            // Optional: remove animation for off-screen item
-            // Using a dummy builder since it's likely not visible
+            _messages.removeLast();
             _listKey.currentState?.removeItem(
               _messages.length, // index 100
               (context, animation) => const SizedBox.shrink(),
@@ -113,7 +111,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
         }
       }
     } catch (e) {
-      print('Error parsing message: $e');
+      debugPrint('Error parsing message: $e');
     }
   }
 
@@ -126,6 +124,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
     try {
       await context.read<FishPiApi>().sendChatMessage(content);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('发送失败: $e')));
@@ -252,7 +251,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                               ? NetworkImage(msg.userAvatarURL)
                               : null,
                           onBackgroundImageError: (exception, stackTrace) {
-                            print('Avatar load failed: $exception');
+                            debugPrint('Avatar load failed: $exception');
                           },
                           child: msg.userAvatarURL.isEmpty
                               ? const Icon(Icons.person, size: 20)

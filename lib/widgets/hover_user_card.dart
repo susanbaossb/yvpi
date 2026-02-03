@@ -89,7 +89,7 @@ class _HoverUserCardState extends State<HoverUserCard> with RouteAware {
       }
     } catch (e) {
       // Ignore error if entry is already disposed
-      print('Error removing overlay: $e');
+      debugPrint('Error removing overlay: $e');
     }
     _currentOverlayEntry = null;
     _currentHoverState?._overlayEntry = null;

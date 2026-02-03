@@ -5,6 +5,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiLogger {
   static final ApiLogger _instance = ApiLogger._internal();
@@ -23,7 +24,7 @@ class ApiLogger {
       }
       _logFile = File('${logDir.path}/api_error.log');
     } catch (e) {
-      print('Failed to initialize logger: $e');
+      debugPrint('Failed to initialize logger: $e');
     }
   }
 
@@ -62,7 +63,7 @@ class ApiLogger {
         flush: true,
       );
     } catch (e) {
-      print('Failed to write log: $e');
+      debugPrint('Failed to write log: $e');
     }
   }
 
@@ -73,7 +74,7 @@ class ApiLogger {
         return await _logFile!.readAsString();
       }
     } catch (e) {
-      print('Failed to read logs: $e');
+      debugPrint('Failed to read logs: $e');
     }
     return '';
   }
@@ -85,7 +86,7 @@ class ApiLogger {
         await _logFile!.writeAsString('');
       }
     } catch (e) {
-      print('Failed to clear logs: $e');
+      debugPrint('Failed to clear logs: $e');
     }
   }
 }

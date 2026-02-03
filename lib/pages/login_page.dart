@@ -44,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       } catch (e) {
         if (mounted) {
-          print(e);
+          debugPrint(e.toString());
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('登录失败: ${e.toString()}')));

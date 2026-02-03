@@ -114,7 +114,6 @@ class _LivenessCard extends StatefulWidget {
 
 class _LivenessCardState extends State<_LivenessCard> {
   double _liveness = 0.0;
-  bool _loading = true;
 
   @override
   void initState() {
@@ -129,11 +128,10 @@ class _LivenessCardState extends State<_LivenessCard> {
       if (mounted) {
         setState(() {
           _liveness = liveness;
-          _loading = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _loading = false);
+      // ignore error
     }
   }
 
@@ -170,7 +168,7 @@ class _LivenessCardState extends State<_LivenessCard> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.cyan.withOpacity(0.1),
+                    color: Colors.cyan.withAlpha(25),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(

@@ -13,6 +13,7 @@ import 'pages/section_page.dart';
 import 'utils/constants.dart';
 
 void main() {
+  debugPrint('App Start: ${DateTime.now()}');
   runApp(
     MultiProvider(
       providers: [
@@ -32,6 +33,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+
+    if (!auth.isInitialized) {
+      return const MaterialApp(
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     final router = GoRouter(
       initialLocation: '/',
       refreshListenable: auth,

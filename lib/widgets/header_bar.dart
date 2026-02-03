@@ -101,6 +101,16 @@ class HeaderBar extends StatelessWidget {
                       Consumer<AuthProvider>(
                         builder: (context, auth, _) {
                           final user = auth.user;
+                          if (auth.isLoggedIn && user == null) {
+                            return const SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            );
+                          }
                           if (user != null && user.userAvatarURL.isNotEmpty) {
                             return Builder(
                               builder: (context) {

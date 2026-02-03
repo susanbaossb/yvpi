@@ -14,29 +14,33 @@ class SectionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const HeaderBar(),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: const BorderSide(color: Color(0x11000000)),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 68),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: const BorderSide(color: Color(0x11000000)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('$title 区域占位（开发中...）'),
+                      ),
+                    ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text('$title 区域占位（开发中...）'),
-                  ),
-                ),
+                  const SizedBox(height: 24),
+                  const FooterBar(),
+                ],
               ),
-              const SizedBox(height: 24),
-              const FooterBar(),
-            ],
-          ),
+            ),
+            const Positioned(top: 0, left: 0, right: 0, child: HeaderBar()),
+          ],
         ),
       ),
     );

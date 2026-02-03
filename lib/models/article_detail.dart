@@ -65,7 +65,12 @@ class ArticleDetail {
       timeAgo:
           article['timeAgo'] ??
           '', // API often provides formatted time or we parse timestamp
-      tags: (article['articleTags'] as String?)?.split(',') ?? [],
+      tags: (article['articleTags'] as String?)
+              ?.split(',')
+              .map((t) => t.trim())
+              .where((t) => t.isNotEmpty)
+              .toList() ??
+          [],
       viewCount: article['articleViewCount'] ?? 0,
       likeCount: article['articleGoodCnt'] ?? 0,
       badCount: article['articleBadCnt'] ?? 0,
