@@ -19,6 +19,7 @@ class ArticleDetail {
   final int collectCount;
   final int rewardCount;
   final bool isReward;
+  final int voteStatus; // 0: None, -1: Liked (Bad/Hate might be other values)
   final List<ArticleComment> comments;
   final List<SimpleUser> rewardedUsers;
   final List<SimpleUser> participatingUsers;
@@ -40,6 +41,7 @@ class ArticleDetail {
     required this.collectCount,
     this.rewardCount = 0,
     this.isReward = false,
+    this.voteStatus = 0,
     required this.comments,
     this.rewardedUsers = const [],
     this.participatingUsers = const [],
@@ -72,6 +74,7 @@ class ArticleDetail {
       collectCount: article['articleCollectCnt'] ?? 0,
       rewardCount: article['articleThankCnt'] ?? 0,
       isReward: article['thanked'] ?? false,
+      voteStatus: article['articleVote'] ?? 0,
       comments: commentsList.map((e) => ArticleComment.fromJson(e)).toList(),
       rewardedUsers: rewards.map((e) => SimpleUser.fromJson(e)).toList(),
       participatingUsers: participants
@@ -97,6 +100,7 @@ class ArticleDetail {
     int? collectCount,
     int? rewardCount,
     bool? isReward,
+    int? voteStatus,
     List<ArticleComment>? comments,
     List<SimpleUser>? rewardedUsers,
     List<SimpleUser>? participatingUsers,
@@ -118,6 +122,7 @@ class ArticleDetail {
       collectCount: collectCount ?? this.collectCount,
       rewardCount: rewardCount ?? this.rewardCount,
       isReward: isReward ?? this.isReward,
+      voteStatus: voteStatus ?? this.voteStatus,
       comments: comments ?? this.comments,
       rewardedUsers: rewardedUsers ?? this.rewardedUsers,
       participatingUsers: participatingUsers ?? this.participatingUsers,

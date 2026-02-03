@@ -33,67 +33,16 @@ class ArticleContentWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Title
-            SelectableText(
-              article.title,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                height: 1.4,
+            Center(
+              child: SelectableText(
+                article.title,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  height: 1.4,
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-            // Tags
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final tag in article.tags)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      tag,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // Author Bar
-            Row(
-              children: [
-                _buildAvatar(
-                  article.authorAvatar,
-                  article.userNickname,
-                  userName: article.userName,
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      article.userNickname,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      '发布于 ${article.timeAgo} · ${article.viewCount} 次浏览',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            const Divider(),
             const SizedBox(height: 32),
             // Content
             HtmlWidget(

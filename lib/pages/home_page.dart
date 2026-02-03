@@ -30,125 +30,135 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const HeaderBar(),
-              const SizedBox(height: 12),
-              // 1. Article List Section
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1280),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Card(
-                      color: Colors.white,
-                      surfaceTintColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: Color(0x11000000)),
-                      ),
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _ArticleColumn(
-                                title: '最近',
-                                loader: (api) => api.getRecentArticles(),
-                              ),
-                            ),
-                            const VerticalDivider(
-                              width: 1,
-                              thickness: 1,
-                              color: Color(0x11000000),
-                            ),
-                            Expanded(
-                              child: _ArticleColumn(
-                                title: '热门',
-                                loader: (api) => api.getHotArticles(),
-                              ),
-                            ),
-                            const VerticalDivider(
-                              width: 1,
-                              thickness: 1,
-                              color: Color(0x11000000),
-                            ),
-                            SizedBox(width: 300, child: _RightRankColumn()),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // 2. Dashboard Section
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1280),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: HomeDashboard(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // 3. Interaction Section
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1280),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Card(
-                      color: Colors.white,
-                      surfaceTintColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: const BorderSide(color: Color(0x11000000)),
-                      ),
-                      child: SizedBox(
-                        height: 800,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left: Chat Room
-                            const Expanded(flex: 3, child: ChatRoomWidget()),
-                            const VerticalDivider(
-                              width: 1,
-                              thickness: 1,
-                              color: Color(0x11000000),
-                            ),
-                            // Center: Hot Articles
-                            Expanded(
-                              flex: 4,
-                              child: SingleChildScrollView(
-                                child: _ArticleColumn(
-                                  title: '热门',
-                                  loader: (api) => api.getHotArticles(),
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 68),
+              child: Column(
+                children: [
+                  // 1. Article List Section
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1280),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Card(
+                          color: Colors.white,
+                          surfaceTintColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: const BorderSide(color: Color(0x11000000)),
+                          ),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: _ArticleColumn(
+                                    title: '最近',
+                                    loader: (api) => api.getRecentArticles(),
+                                  ),
                                 ),
-                              ),
+                                const VerticalDivider(
+                                  width: 1,
+                                  thickness: 1,
+                                  color: Color(0x11000000),
+                                ),
+                                Expanded(
+                                  child: _ArticleColumn(
+                                    title: '热门',
+                                    loader: (api) => api.getHotArticles(),
+                                  ),
+                                ),
+                                const VerticalDivider(
+                                  width: 1,
+                                  thickness: 1,
+                                  color: Color(0x11000000),
+                                ),
+                                SizedBox(width: 300, child: _RightRankColumn()),
+                              ],
                             ),
-                            const VerticalDivider(
-                              width: 1,
-                              thickness: 1,
-                              color: Color(0x11000000),
-                            ),
-                            // Right: Breeze Moon
-                            const Expanded(flex: 3, child: BreezeMoonWidget()),
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  // 2. Dashboard Section
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1280),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: HomeDashboard(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // 3. Interaction Section
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1280),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Card(
+                          color: Colors.white,
+                          surfaceTintColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: const BorderSide(color: Color(0x11000000)),
+                          ),
+                          child: SizedBox(
+                            height: 800,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Left: Chat Room
+                                const Expanded(
+                                  flex: 3,
+                                  child: ChatRoomWidget(),
+                                ),
+                                const VerticalDivider(
+                                  width: 1,
+                                  thickness: 1,
+                                  color: Color(0x11000000),
+                                ),
+                                // Center: Hot Articles
+                                Expanded(
+                                  flex: 4,
+                                  child: SingleChildScrollView(
+                                    child: _ArticleColumn(
+                                      title: '热门',
+                                      loader: (api) => api.getHotArticles(),
+                                    ),
+                                  ),
+                                ),
+                                const VerticalDivider(
+                                  width: 1,
+                                  thickness: 1,
+                                  color: Color(0x11000000),
+                                ),
+                                // Right: Breeze Moon
+                                const Expanded(
+                                  flex: 3,
+                                  child: BreezeMoonWidget(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const FooterBar(),
+                ],
               ),
-              const SizedBox(height: 24),
-              const FooterBar(),
-            ],
-          ),
+            ),
+            const Positioned(top: 0, left: 0, right: 0, child: HeaderBar()),
+          ],
         ),
       ),
     );
