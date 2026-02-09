@@ -15,6 +15,8 @@ class ArticleSummary {
   final String? thumbnailURL;
   final int? articleCommentCount;
   final String? articleViewCntDisplayFormat;
+  final String? articleTags;
+  final String? articleCreateTimeStr;
 
   ArticleSummary({
     this.id,
@@ -24,6 +26,8 @@ class ArticleSummary {
     this.thumbnailURL,
     this.articleCommentCount,
     this.articleViewCntDisplayFormat,
+    this.articleTags,
+    this.articleCreateTimeStr,
   });
 
   factory ArticleSummary.fromJson(Map<String, dynamic> json) =>

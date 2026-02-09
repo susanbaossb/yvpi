@@ -89,6 +89,50 @@ class FishPiApi {
     return null;
   }
 
+  // 获取用户文章列表
+  Future<List<ArticleSummary>> getUserArticles(
+    String username, {
+    int page = 1,
+    int size = 20,
+  }) async {
+    // 假设 API 为 /api/user/{username}/articles
+    // 如果不正确，可能需要调整为 /api/articles?author=username
+    // 根据 Sym 源码习惯，通常是 /api/user/{username}/articles
+    try {
+      return await _fetchArticles(
+        '/api/user/$username/articles',
+        page: page,
+        size: size,
+      );
+    } catch (e) {
+      // Fallback: try search/filter if specific endpoint doesn't exist?
+      // For now, return empty or rethrow.
+      debugPrint('Failed to get user articles: $e');
+      return [];
+    }
+  }
+
+  // 获取用户清风明月
+  Future<List<BreezeMoon>> getUserBreezeMoons(
+    String username, {
+    int page = 1,
+    int size = 20,
+  }) async {
+    try {
+      final response = await _client.dio.get(
+        '/api/user/$username/breezemoons',
+        queryParameters: {'p': page, 'size': size},
+      );
+      if (response.data['code'] == 0) {
+        final list = response.data['data']['breezemoons'] as List;
+        return list.map((e) => BreezeMoon.fromJson(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('Failed to get user breezemoons: $e');
+    }
+    return [];
+  }
+
   // 关注用户
   Future<void> followUser(String followingId) async {
     try {

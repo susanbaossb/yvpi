@@ -23,6 +23,10 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
   onlineMinute: _stringToInt(json['onlineMinute']),
   userURL: json['userURL'] as String?,
   userAppRole: _stringToInt(json['userAppRole']),
+  userCreateTime: json['userCreateTime'] as String?,
+  userLatestLoginTime: json['userLatestLoginTime'] as String?,
+  userLongestCheckinStreak: _stringToInt(json['userLongestCheckinStreak']),
+  userCurrentCheckinStreak: _stringToInt(json['userCurrentCheckinStreak']),
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -42,4 +46,8 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'onlineMinute': instance.onlineMinute,
   'userURL': instance.userURL,
   'userAppRole': instance.userAppRole,
+  'userCreateTime': instance.userCreateTime,
+  'userLatestLoginTime': instance.userLatestLoginTime,
+  'userLongestCheckinStreak': instance.userLongestCheckinStreak,
+  'userCurrentCheckinStreak': instance.userCurrentCheckinStreak,
 };

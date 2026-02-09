@@ -7,6 +7,7 @@
 /// - 私信入口
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart';
 
@@ -379,20 +380,25 @@ class _UserInfoCardState extends State<UserInfoCard> {
             Positioned(
               left: 16,
               top: 60,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                padding: const EdgeInsets.all(2),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    widget.avatarUrl,
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
+              child: GestureDetector(
+                onTap: () {
+                  context.push('/member/${widget.userName}');
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(
+                      widget.avatarUrl,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),

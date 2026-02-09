@@ -29,6 +29,12 @@ class User {
   final String? userURL;
   @JsonKey(fromJson: _stringToInt)
   final int? userAppRole;
+  final String? userCreateTime;
+  final String? userLatestLoginTime;
+  @JsonKey(fromJson: _stringToInt)
+  final int? userLongestCheckinStreak;
+  @JsonKey(fromJson: _stringToInt)
+  final int? userCurrentCheckinStreak;
 
   User({
     required this.oId,
@@ -47,6 +53,10 @@ class User {
     this.onlineMinute,
     this.userURL,
     this.userAppRole,
+    this.userCreateTime,
+    this.userLatestLoginTime,
+    this.userLongestCheckinStreak,
+    this.userCurrentCheckinStreak,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

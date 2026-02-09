@@ -7,6 +7,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart';
 import 'user_info_card.dart';
@@ -130,10 +131,10 @@ class _HoverUserCardState extends State<HoverUserCard> with RouteAware {
 
     // Card width is 320
     const cardWidth = 320.0;
-    
+
     // Default to right side
     double left = offset.dx + size.width + 10;
-    
+
     // If it overflows right screen edge, show on left side
     if (left + cardWidth > screenSize.width) {
       left = offset.dx - cardWidth - 10;
@@ -216,7 +217,12 @@ class _HoverUserCardState extends State<HoverUserCard> with RouteAware {
     return MouseRegion(
       onEnter: (_) => _scheduleShowOverlay(),
       onExit: (_) => _hideOverlay(),
-      child: widget.child,
+      child: GestureDetector(
+        onTap: () {
+          context.push('/member/${widget.userName}');
+        },
+        child: widget.child,
+      ),
     );
   }
 }
