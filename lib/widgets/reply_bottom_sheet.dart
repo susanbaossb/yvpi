@@ -4,6 +4,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
+
+/// 底部评论/回复输入框组件
+///
+/// 提供一个从底部弹出的输入面板，用于发表评论或回复。
+/// 功能包括：
+/// - 文本输入（支持 Emoji 快捷输入）
+/// - 图片上传（支持粘贴板图片、拖拽文件）
+/// - 异步发送与状态反馈
 import 'package:extended_text_field/extended_text_field.dart';
 import 'special_text/emoji_text.dart';
 import '../api/fishpi_api.dart';

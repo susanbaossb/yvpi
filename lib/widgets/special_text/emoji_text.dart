@@ -1,6 +1,10 @@
 import 'package:extended_text_field/extended_text_field.dart';
 import 'package:flutter/material.dart';
 
+/// Emoji 文本解析器
+///
+/// 用于识别和渲染文本中的 Emoji 语法（如 `![emoji]`）。
+/// 继承自 `SpecialText`，配合 `ExtendedTextField` 使用。
 class EmojiText extends SpecialText {
   EmojiText(TextStyle? textStyle, {this.start})
     : super(EmojiText.flag, ')', textStyle);

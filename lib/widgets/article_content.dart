@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../models/article_detail.dart';
+
+/// 文章内容渲染组件
+///
+/// 使用 `flutter_widget_from_html` 渲染 HTML 内容。
+/// 支持：
+/// - 图片预览
+/// - 代码高亮（部分支持）
+/// - 自定义样式
+/// - 链接点击处理
 import '../widgets/hover_user_card.dart';
 
 class ArticleContentWidget extends StatelessWidget {

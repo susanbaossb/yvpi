@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+/// 文章评论列表组件
+///
+/// 展示文章的评论列表，支持：
+/// - 渲染 HTML 评论内容
+/// - 显示评论作者信息
+/// - 评论回复功能（弹出底部输入框）
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../models/article_detail.dart';
 import '../providers/auth_provider.dart';

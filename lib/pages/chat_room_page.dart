@@ -1,6 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
+/// 完整版聊天室页面
+///
+/// 这是一个全屏的聊天室页面，提供更完整的聊天体验。
+/// 功能包括：
+/// - 实时消息展示与发送
+/// - 图片/文件上传
+/// - 粘贴板图片发送支持
+/// - 拖拽文件发送支持（桌面端）
+/// - 消息引用回复
 import 'package:flutter/services.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:path_provider/path_provider.dart';

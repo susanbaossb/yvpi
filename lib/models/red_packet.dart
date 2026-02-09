@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+/// 红包类型枚举
+///
+/// 定义了支持的各种红包类型，如拼手气红包、平分红包、专属红包等。
 enum RedPacketType {
   random, // 拼手气红包
   average, // 平分红包
@@ -9,6 +12,9 @@ enum RedPacketType {
   unknown,
 }
 
+/// 红包信息模型
+///
+/// 包含红包的类型、总金额、个数、发送者、接收者、领取状态等详细信息。
 class RedPacket {
   final String msg;
   final String senderId;
