@@ -5,6 +5,7 @@
 /// - 左侧/主内容区域：展示最新文章、热门文章列表及“清风明月”动态
 /// - 右侧侧边栏 (HomeDashboard)：展示活跃度、签到榜、在线榜及聊天室入口
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../api/fishpi_api.dart';
@@ -110,42 +111,44 @@ class _HomePageState extends State<HomePage> {
                             borderRadius: BorderRadius.circular(8),
                             side: const BorderSide(color: Color(0x11000000)),
                           ),
-                          child: SizedBox(
-                            height: 800,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Left: Chat Room
-                                const Expanded(
-                                  flex: 3,
-                                  child: ChatRoomWidget(),
-                                ),
-                                const VerticalDivider(
-                                  width: 1,
-                                  thickness: 1,
-                                  color: Color(0x11000000),
-                                ),
-                                // Center: Hot Articles
-                                Expanded(
-                                  flex: 4,
-                                  child: SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 800),
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Left: Chat Room
+                                  const Expanded(
+                                    flex: 3,
+                                    child: IgnoreIntrinsicHeight(
+                                      child: ChatRoomWidget(),
+                                    ),
+                                  ),
+                                  const VerticalDivider(
+                                    width: 1,
+                                    thickness: 1,
+                                    color: Color(0x11000000),
+                                  ),
+                                  // Center: Hot Articles
+                                  Expanded(
+                                    flex: 4,
                                     child: _ArticleColumn(
                                       title: '热门',
                                       loader: (api) => api.getHotArticles(),
                                     ),
                                   ),
-                                ),
-                                const VerticalDivider(
-                                  width: 1,
-                                  thickness: 1,
-                                  color: Color(0x11000000),
-                                ),
-                                // Right: Breeze Moon
-                                const Expanded(
-                                  flex: 3,
-                                  child: BreezeMoonWidget(),
-                                ),
-                              ],
+                                  const VerticalDivider(
+                                    width: 1,
+                                    thickness: 1,
+                                    color: Color(0x11000000),
+                                  ),
+                                  // Right: Breeze Moon
+                                  const Expanded(
+                                    flex: 3,
+                                    child: BreezeMoonWidget(),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -165,10 +168,23 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _ArticleColumn extends StatelessWidget {
+class _ArticleColumn extends StatefulWidget {
   final String title;
   final Future<List<ArticleSummary>> Function(FishPiApi api) loader;
   const _ArticleColumn({required this.title, required this.loader});
+
+  @override
+  State<_ArticleColumn> createState() => _ArticleColumnState();
+}
+
+class _ArticleColumnState extends State<_ArticleColumn> {
+  late Future<List<ArticleSummary>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.loader(context.read<AuthProvider>().api);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,14 +195,17 @@ class _ArticleColumn extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                widget.title,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const Spacer(),
               TextButton(onPressed: () {}, child: const Text('更多')),
             ],
           ),
           const Divider(),
           FutureBuilder<List<ArticleSummary>>(
-            future: loader(context.read<AuthProvider>().api),
+            future: _future,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Padding(
@@ -423,4 +442,24 @@ class _RightRankColumn extends StatelessWidget {
       ],
     );
   }
+}
+
+class IgnoreIntrinsicHeight extends SingleChildRenderObjectWidget {
+  const IgnoreIntrinsicHeight({super.key, required Widget child})
+    : super(child: child);
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return RenderIgnoreIntrinsicHeight();
+  }
+}
+
+class RenderIgnoreIntrinsicHeight extends RenderProxyBox {
+  RenderIgnoreIntrinsicHeight({RenderBox? child}) : super(child);
+
+  @override
+  double computeMinIntrinsicHeight(double width) => 0.0;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => 0.0;
 }

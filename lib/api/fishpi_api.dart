@@ -6,11 +6,15 @@
 /// - 交互操作 (点赞, 关注, 评论, 发送消息)
 /// - 榜单数据 (签到榜, 在线榜)
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../models/article.dart';
 import '../models/article_detail.dart';
 import '../models/breezemoon.dart';
+import '../models/chat_message.dart';
 import 'package:dio/dio.dart';
 import 'client.dart';
 
@@ -70,7 +74,6 @@ class FishPiApi {
         throw Exception(response.data['msg'] ?? 'Failed to get user info');
       }
     } catch (e) {
-      // print('getUser error: $e');
       rethrow;
     }
   }
@@ -82,9 +85,7 @@ class FishPiApi {
       if (response.statusCode == 200) {
         return User.fromJson(response.data);
       }
-    } catch (e) {
-      // print('Failed to get user info for $username: $e');
-    }
+    } catch (e) {}
     return null;
   }
 
@@ -173,30 +174,39 @@ class FishPiApi {
     }
   }
 
-  // 获取最新文章列表
-  Future<List<ArticleSummary>> getRecentArticles({
+  // 通用获取文章列表方法
+  Future<List<ArticleSummary>> _fetchArticles(
+    String path, {
     int page = 1,
     int size = 20,
   }) async {
     try {
       final response = await _client.dio.get(
-        '/api/articles/recent',
+        path,
         queryParameters: {'p': page, 'size': size},
+        options: Options(responseType: ResponseType.bytes),
       );
-      if (response.data is Map && response.data['code'] == 0) {
-        final data = response.data['data'];
-        final List list = data is Map ? (data['articles'] ?? []) : (data ?? []);
-        return list
-            .map((e) => ArticleSummary.fromJson(_normalizeArticleJson(e)))
-            .toList();
-      }
-      throw Exception(response.data['msg'] ?? 'Failed to load recent articles');
+
+      final Uint8List bytes = response.data is Uint8List
+          ? response.data
+          : Uint8List.fromList(List<int>.from(response.data));
+      final data = TransferableTypedData.fromList([bytes]);
+
+      return await compute(_parseArticlesFromTransferable, data);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw Exception('请先登录后查看文章列表');
       }
       rethrow;
     }
+  }
+
+  // 获取最新文章列表
+  Future<List<ArticleSummary>> getRecentArticles({
+    int page = 1,
+    int size = 20,
+  }) async {
+    return _fetchArticles('/api/articles/recent', page: page, size: size);
   }
 
   // 获取热门文章列表
@@ -204,47 +214,7 @@ class FishPiApi {
     int page = 1,
     int size = 20,
   }) async {
-    try {
-      final response = await _client.dio.get(
-        '/api/articles/recent/hot',
-        queryParameters: {'p': page, 'size': size},
-      );
-      if (response.data is Map && response.data['code'] == 0) {
-        final data = response.data['data'];
-        final List list = data is Map ? (data['articles'] ?? []) : (data ?? []);
-        return list
-            .map((e) => ArticleSummary.fromJson(_normalizeArticleJson(e)))
-            .toList();
-      }
-      throw Exception(response.data['msg'] ?? 'Failed to load hot articles');
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        throw Exception('请先登录后查看文章列表');
-      }
-      rethrow;
-    }
-  }
-
-  Map<String, dynamic> _normalizeArticleJson(Map<String, dynamic> json) {
-    return {
-      'id': json['oId']?.toString() ?? json['id']?.toString(),
-      'articleTitle': json['articleTitle'] ?? json['title'] ?? '',
-      'articlePreviewContent':
-          json['articlePreviewContent'] ?? json['content'] ?? '',
-      'authorName':
-          json['articleAuthorName'] ??
-          json['articleAuthor']?['userName'] ??
-          json['authorName'],
-      'thumbnailURL':
-          json['articleAuthorThumbnailURL48'] ??
-          json['articleAuthor']?['thumbnailURL'] ??
-          json['thumbnailURL'],
-      'articleCommentCount':
-          json['articleCommentCount'] ?? json['comments'] ?? 0,
-      'articleViewCntDisplayFormat':
-          json['articleViewCntDisplayFormat'] ??
-          json['articleViewCount']?.toString(),
-    };
+    return _fetchArticles('/api/articles/recent/hot', page: page, size: size);
   }
 
   // 获取文章详情
@@ -256,7 +226,6 @@ class FishPiApi {
       }
       throw Exception(response.data['msg'] ?? 'Failed to load article detail');
     } catch (e) {
-      // print('getArticleDetail error: $e');
       rethrow;
     }
   }
@@ -299,7 +268,6 @@ class FishPiApi {
         // Server error (often happens if not logged in or server issue), just return 0
         return 0.0;
       }
-      // print('getLiveness error: $e');
       return 0.0;
     }
   }
@@ -339,7 +307,6 @@ class FishPiApi {
       }
       return [];
     } catch (e) {
-      // print('getBreezeMoons error: $e');
       return [];
     }
   }
@@ -353,7 +320,6 @@ class FishPiApi {
       }
       return null;
     } catch (e) {
-      // print('getChatRoomNode error: $e');
       return null;
     }
   }
@@ -373,12 +339,36 @@ class FishPiApi {
     }
   }
 
+  // 获取聊天室历史消息
+  Future<List<ChatMessage>> getChatRoomHistory({int page = 1}) async {
+    try {
+      final response = await _client.dio.get(
+        '/chat-room/more',
+        queryParameters: {'page': page},
+      );
+      final data = response.data;
+      if (data is Map) {
+        // 后端可能返回 {code, data: {msgs: []}} 或 {msgs: []}
+        final root = data['data'] ?? data;
+        final List msgs = root is Map
+            ? (root['msgs'] ?? root['data'] ?? [])
+            : (root ?? []);
+        return msgs
+            .map((e) => ChatMessage.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   // 发布清风明月
   Future<void> sendBreezeMoon(String content) async {
     try {
       final response = await _client.dio.post(
-        '/api/breezemoon',
-        data: {'content': content},
+        '/breezemoon',
+        data: {'breezemoonContent': content},
       );
       if (response.data['code'] != 0) {
         throw Exception(response.data['msg'] ?? '发布失败');
@@ -416,7 +406,6 @@ class FishPiApi {
       }
       return [];
     } catch (e) {
-      // print('getArticleComments error: $e');
       return [];
     }
   }
@@ -496,5 +485,167 @@ class FishPiApi {
     } catch (e) {
       rethrow;
     }
+  }
+
+  // 打开聊天室红包
+  Future<Map<String, dynamic>> openRedPacket(String oId) async {
+    try {
+      final response = await _client.dio.post(
+        '/chat-room/red-packet/open',
+        data: {'oId': oId},
+      );
+      // The API returns the data object directly without a wrapper code in some cases,
+      // or we need to handle it flexibly.
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        if (data.containsKey('who') || data.containsKey('info')) {
+          return data;
+        }
+        if (data['code'] != null && data['code'] != 0) {
+          throw Exception(data['msg'] ?? '红包领取失败');
+        }
+        return data;
+      }
+      throw Exception('未知响应格式');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 用户名联想
+  Future<List<Map<String, dynamic>>> suggestUsers(String name) async {
+    try {
+      final response = await _client.dio.post(
+        '/users/names',
+        data: {'name': name},
+      );
+      if (response.data['code'] == 0) {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 发送聊天室红包
+  Future<void> sendRedPacket({
+    required String type,
+    required int money,
+    required int count,
+    required String msg,
+    List<String>? receivers,
+    int? gesture,
+  }) async {
+    try {
+      final response = await _client.dio.post(
+        '/chat-room/red-packet/send',
+        data: {
+          'type': type,
+          'money': money,
+          'count': count,
+          'msg': msg,
+          if (receivers != null) 'recivers': receivers,
+          if (gesture != null) 'gesture': gesture,
+        },
+      );
+      if (response.data['code'] != 0) {
+        throw Exception(response.data['msg'] ?? '发送失败');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}
+
+// Top-level function for compute
+List<ArticleSummary> _parseArticlesFromTransferable(
+  TransferableTypedData transferableData,
+) {
+  try {
+    final bytes = transferableData.materialize().asUint8List();
+    if (bytes.isEmpty) return [];
+
+    final jsonStr = utf8.decode(bytes);
+    final json = jsonDecode(jsonStr);
+
+    if (json is Map && json['code'] == 0) {
+      final responseData = json['data'];
+      List list = [];
+
+      if (responseData is List) {
+        list = responseData;
+      } else if (responseData is Map && responseData['articles'] is List) {
+        list = responseData['articles'];
+      }
+
+      return list.map((e) {
+        final map = Map<String, dynamic>.from(e);
+
+        // 映射 ID 字段
+        if (map['id'] == null && map['oId'] != null) {
+          map['id'] = map['oId'];
+        }
+
+        // 映射作者名称
+        if (map['authorName'] == null && map['articleAuthorName'] != null) {
+          map['authorName'] = map['articleAuthorName'];
+        }
+
+        // 映射头像 URL 并处理相对路径
+        String? avatarUrl =
+            map['articleAuthorThumbnailURL48'] ??
+            map['articleAuthorThumbnailURL'] ??
+            map['thumbnailURL'];
+
+        if (avatarUrl != null) {
+          if (!avatarUrl.startsWith('http')) {
+            avatarUrl = 'https://fishpi.cn$avatarUrl';
+          }
+          map['thumbnailURL'] = avatarUrl;
+        }
+
+        // 补全热度显示（浏览量）
+        if (map['articleViewCntDisplayFormat'] == null) {
+          final viewCount = map['articleViewCount'] ?? map['viewCount'];
+          if (viewCount != null) {
+            final int views = viewCount is int
+                ? viewCount
+                : int.tryParse(viewCount.toString()) ?? 0;
+            if (views >= 1000) {
+              map['articleViewCntDisplayFormat'] =
+                  '${(views / 1000).toStringAsFixed(1)}k';
+            } else {
+              map['articleViewCntDisplayFormat'] = views.toString();
+            }
+          }
+        }
+
+        // 优化：截断过长的预览内容，防止主线程反序列化大字符串时卡顿
+        if (map['articlePreviewContent'] is String) {
+          final String content = map['articlePreviewContent'];
+          if (content.length > 200) {
+            map['articlePreviewContent'] = '${content.substring(0, 200)}...';
+          }
+        }
+
+        // 检查缩略图是否为过大的 Data URI
+        if (map['thumbnailURL'] is String) {
+          final String url = map['thumbnailURL'];
+          if (url.startsWith('data:') && url.length > 500) {
+            map['thumbnailURL'] = null; // 忽略过大的 Base64 图片
+          }
+        }
+
+        return ArticleSummary.fromJson(map);
+      }).toList();
+    }
+    throw Exception(
+      json is Map
+          ? (json['msg'] ?? 'Failed to load articles')
+          : 'Unknown error',
+    );
+  } catch (e) {
+    rethrow;
   }
 }

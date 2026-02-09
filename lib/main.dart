@@ -10,10 +10,11 @@ import 'api/fishpi_api.dart';
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
 import 'pages/section_page.dart';
+import 'pages/user_profile_page.dart';
+import 'pages/chat_room_page.dart';
 import 'utils/constants.dart';
 
 void main() {
-  debugPrint('App Start: ${DateTime.now()}');
   runApp(
     MultiProvider(
       providers: [
@@ -27,20 +28,21 @@ void main() {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
+  State<MyApp> createState() => _MyAppState();
+}
 
-    if (!auth.isInitialized) {
-      return const MaterialApp(
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
-    }
+class _MyAppState extends State<MyApp> {
+  late final GoRouter _router;
 
-    final router = GoRouter(
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthProvider>();
+    _router = GoRouter(
       initialLocation: '/',
       refreshListenable: auth,
       observers: [routeObserver],
@@ -64,14 +66,30 @@ class MyApp extends StatelessWidget {
         ),
         GoRoute(
           path: '/chat',
-          builder: (context, state) => const SectionPage(title: '聊天室'),
+          builder: (context, state) => const ChatRoomPage(),
         ),
         GoRoute(
           path: '/follow',
           builder: (context, state) => const SectionPage(title: '关注'),
         ),
+        GoRoute(
+          path: '/member/:username',
+          builder: (context, state) =>
+              UserProfilePage(username: state.pathParameters['username'] ?? ''),
+        ),
       ],
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    if (!auth.isInitialized) {
+      return const MaterialApp(
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
 
     return MaterialApp.router(
       title: 'FishPi Client',
@@ -79,7 +97,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      routerConfig: router,
+      routerConfig: _router,
     );
   }
 }

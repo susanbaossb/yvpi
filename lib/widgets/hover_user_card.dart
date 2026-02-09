@@ -126,20 +126,31 @@ class _HoverUserCardState extends State<HoverUserCard> with RouteAware {
     final renderBox = context.findRenderObject() as RenderBox;
     final size = renderBox.size;
     final offset = renderBox.localToGlobal(Offset.zero);
+    final screenSize = MediaQuery.of(context).size;
 
     // Card width is 320
     const cardWidth = 320.0;
-    // Center horizontally relative to the avatar
-    double left = offset.dx + size.width / 2 - cardWidth / 2;
+    
+    // Default to right side
+    double left = offset.dx + size.width + 10;
+    
+    // If it overflows right screen edge, show on left side
+    if (left + cardWidth > screenSize.width) {
+      left = offset.dx - cardWidth - 10;
+    }
 
-    // Simple boundary check (assuming screen width is available via overlay context)
-    // For now, just ensure it's not too far left
-    // if (left < 10) left = 10;
+    // Top position: align with avatar top
+    // Ideally we would center it vertically, but we don't know the card height yet.
+    // Top alignment is a safe default.
+    double top = offset.dy;
+
+    // Simple boundary check for left edge (in case it flipped to left and went off screen)
+    if (left < 10) left = 10;
 
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         left: left,
-        top: offset.dy + size.height + 10,
+        top: top,
         child: MouseRegion(
           onEnter: (_) => _hideTimer?.cancel(),
           onExit: (_) => _hideOverlay(),

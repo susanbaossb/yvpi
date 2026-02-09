@@ -8,11 +8,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import '../providers/auth_provider.dart';
 import '../api/fishpi_api.dart';
 import '../models/chat_message.dart';
+import 'hover_user_card.dart';
 
 class ChatRoomWidget extends StatefulWidget {
   const ChatRoomWidget({super.key});
@@ -33,7 +36,27 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
   @override
   void initState() {
     super.initState();
+    _loadHistory();
     _connect();
+  }
+
+  Future<void> _loadHistory() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.apiKey == null) return;
+    try {
+      final api = context.read<FishPiApi>();
+      final history = await api.getChatRoomHistory(page: 1);
+      if (!mounted) return;
+      for (final msg in history) {
+        _messages.insert(0, msg);
+        _listKey.currentState?.insertItem(
+          0,
+          duration: const Duration(milliseconds: 200),
+        );
+      }
+    } catch (e) {
+      debugPrint('加载聊天室历史失败: $e');
+    }
   }
 
   void _connect() async {
@@ -79,7 +102,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
         if (mounted) {
           _onlineCount.value = data['onlineChatCnt'] ?? 0;
         }
-      } else if (data['type'] == 'msg') {
+      } else if (data['type'] == 'msg' || data['type'] == 'redPacket') {
         final chatMsg = ChatMessage.fromJson(data);
         if (mounted) {
           _messages.insert(0, chatMsg);
@@ -101,11 +124,16 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
           // Scroll to top
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_scrollController.hasClients) {
-              _scrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
+              final auth = context.read<AuthProvider>();
+              final isSelf = chatMsg.userName == auth.user?.userName;
+              // 只有当用户在顶部附近，或者是自己发送的消息时，才自动滚动
+              if (isSelf || _scrollController.offset < 100) {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              }
             }
           });
         }
@@ -143,6 +171,14 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
 
   @override
   Widget build(BuildContext context) {
+    String linkifyMentions(String content) {
+      if (content.contains('<a')) return content;
+      return content.replaceAllMapped(
+        RegExp(r'@([a-zA-Z0-9_\-]+)'),
+        (m) => '@<a href="https://fishpi.cn/member/${m[1]}">${m[1]}</a>',
+      );
+    }
+
     return Column(
       children: [
         Padding(
@@ -162,21 +198,14 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('进入完整版', style: TextStyle(fontSize: 12)),
+                onPressed: () => context.go('/chat'),
+                child: const Text('进入完整版聊天室'),
               ),
             ],
           ),
         ),
         const Divider(height: 1),
+        // Input Area
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
@@ -227,12 +256,22 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
           ),
         ),
         const Divider(height: 1),
+        // Chat List
         Expanded(
           child: AnimatedList(
             key: _listKey,
             controller: _scrollController,
             padding: const EdgeInsets.all(12),
             initialItemCount: _messages.length,
+            reverse:
+                true, // List grows from bottom? No, reverse: true means bottom is 0.
+            // Wait, the original code had reverse: false (default) but insert(0).
+            // Let's check the Read output again.
+            // The Read output did NOT show reverse: true. It showed initialItemCount.
+            // However, typical chat is reverse: true.
+            // But `_messages.insert(0, msg)` implies new messages are at 0.
+            // If reverse: false, index 0 is at top. So new messages appear at top.
+            // That's what the code did.
             itemBuilder: (context, index, animation) {
               if (index >= _messages.length) return const SizedBox.shrink();
               final msg = _messages[index];
@@ -245,17 +284,40 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundImage: msg.userAvatarURL.isNotEmpty
-                              ? NetworkImage(msg.userAvatarURL)
-                              : null,
-                          onBackgroundImageError: (exception, stackTrace) {
-                            debugPrint('Avatar load failed: $exception');
-                          },
-                          child: msg.userAvatarURL.isEmpty
-                              ? const Icon(Icons.person, size: 20)
-                              : null,
+                        HoverUserCard(
+                          userName: msg.userName,
+                          avatarUrl: msg.userAvatarURL,
+                          child: SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: ClipOval(
+                              child: msg.userAvatarURL.isNotEmpty
+                                  ? Image.network(
+                                      msg.userAvatarURL,
+                                      width: 32,
+                                      height: 32,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return const ColoredBox(
+                                              color: Color(0xFFE0E0E0),
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.person,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                    )
+                                  : const ColoredBox(
+                                      color: Color(0xFFE0E0E0),
+                                      child: Center(
+                                        child: Icon(Icons.person, size: 20),
+                                      ),
+                                    ),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -286,16 +348,142 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                 ],
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                msg.content.replaceAll(
-                                  RegExp(r'<[^>]*>'),
-                                  '',
-                                ), // Simple HTML strip
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.black87,
+                              if (msg.type == 'redPacket' &&
+                                  msg.redPacket != null)
+                                Builder(
+                                  builder: (context) {
+                                    final auth = context.read<AuthProvider>();
+                                    final isCollected = msg.redPacket!.who.any(
+                                      (e) =>
+                                          e['userName'] == auth.user?.userName,
+                                    );
+                                    return InkWell(
+                                      onTap: () async {
+                                        try {
+                                          final api = context.read<FishPiApi>();
+                                          final result = await api
+                                              .openRedPacket(msg.oId);
+                                          if (context.mounted) {
+                                            // Parse the result to find the user's money
+                                            int? money;
+                                            if (result['who'] is List) {
+                                              for (final item
+                                                  in result['who']) {
+                                                if (item['userName'] ==
+                                                    auth.user?.userName) {
+                                                  money = item['userMoney'];
+                                                  break;
+                                                }
+                                              }
+                                            }
+
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: Text(
+                                                  money != null
+                                                      ? '红包领取成功'
+                                                      : '红包详情',
+                                                ),
+                                                content: Text(
+                                                  money != null
+                                                      ? '恭喜你获得 $money 积分！'
+                                                      : '你似乎没有抢到这个红包，或者已经抢过了。',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(context),
+                                                    child: const Text('确定'),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text('领取失败: $e'),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      child: Container(
+                                        width: 240,
+                                        decoration: BoxDecoration(
+                                          color: isCollected
+                                              ? const Color(0xFFEF9A9A) // 浅红色
+                                              : const Color(0xFFD32F2F), // 深红色
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.all(12),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.redeem,
+                                              color: isCollected
+                                                  ? Colors.white70
+                                                  : const Color(0xFFFFD700),
+                                              size: 36,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    msg
+                                                            .redPacket!
+                                                            .msg
+                                                            .isNotEmpty
+                                                        ? msg.redPacket!.msg
+                                                        : '恭喜发财，大吉大利',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 14,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    isCollected
+                                                        ? '${msg.redPacket!.typeName} (已领取)'
+                                                        : msg
+                                                              .redPacket!
+                                                              .typeName,
+                                                    style: const TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
+                              else
+                                HtmlWidget(
+                                  linkifyMentions(msg.content),
+                                  textStyle: const TextStyle(
+                                    fontSize: 14,
+                                    height: 1.5,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

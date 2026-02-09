@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../api/fishpi_api.dart';
 import '../models/breezemoon.dart';
+import 'hover_user_card.dart';
 
 class BreezeMoonWidget extends StatefulWidget {
   const BreezeMoonWidget({super.key});
@@ -26,7 +27,7 @@ class _BreezeMoonWidgetState extends State<BreezeMoonWidget> {
 
   void _refresh() {
     setState(() {
-      _breezeMoonsFuture = context.read<FishPiApi>().getBreezeMoons(size: 10);
+      _breezeMoonsFuture = context.read<FishPiApi>().getBreezeMoons(size: 20);
     });
   }
 
@@ -39,15 +40,9 @@ class _BreezeMoonWidgetState extends State<BreezeMoonWidget> {
     try {
       await context.read<FishPiApi>().sendBreezeMoon(content);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('发布成功')));
       _refresh();
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('发布失败: $e')));
+      debugPrint('发布失败: $e');
     }
   }
 
@@ -123,50 +118,60 @@ class _BreezeMoonWidgetState extends State<BreezeMoonWidget> {
           ),
         ),
         const Divider(height: 1),
-        Expanded(
-          child: FutureBuilder<List<BreezeMoon>>(
-            future: _breezeMoonsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-              final list = snapshot.data ?? [];
-              if (list.isEmpty) {
-                return const Center(child: Text('暂无内容'));
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: list.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = list[index];
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundImage: NetworkImage(item.authorAvatarURL),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          item.content.replaceAll(RegExp(r'<[^>]*>'), ''),
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-          ),
+        FutureBuilder<List<BreezeMoon>>(
+          future: _breezeMoonsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            final list = snapshot.data ?? [];
+            if (list.isEmpty) {
+              return const Center(child: Text('暂无内容'));
+            }
+            return Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  for (int i = 0; i < list.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 12),
+                    Builder(
+                      builder: (context) {
+                        final item = list[i];
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            HoverUserCard(
+                              userName: item.authorName,
+                              avatarUrl: item.authorAvatarURL,
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundImage: NetworkImage(
+                                  item.authorAvatarURL,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                item.content.replaceAll(RegExp(r'<[^>]*>'), ''),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
