@@ -263,15 +263,6 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
             controller: _scrollController,
             padding: const EdgeInsets.all(12),
             initialItemCount: _messages.length,
-            reverse:
-                true, // List grows from bottom? No, reverse: true means bottom is 0.
-            // Wait, the original code had reverse: false (default) but insert(0).
-            // Let's check the Read output again.
-            // The Read output did NOT show reverse: true. It showed initialItemCount.
-            // However, typical chat is reverse: true.
-            // But `_messages.insert(0, msg)` implies new messages are at 0.
-            // If reverse: false, index 0 is at top. So new messages appear at top.
-            // That's what the code did.
             itemBuilder: (context, index, animation) {
               if (index >= _messages.length) return const SizedBox.shrink();
               final msg = _messages[index];
