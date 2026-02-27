@@ -7,7 +7,6 @@
 /// - 榜单数据 (签到榜, 在线榜)
 import 'dart:convert';
 import 'dart:isolate';
-import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
@@ -15,14 +14,17 @@ import '../models/article.dart';
 import '../models/article_detail.dart';
 import '../models/breezemoon.dart';
 import '../models/chat_message.dart';
+import '../utils/exceptions.dart';
+import '../utils/app_logger.dart';
 import 'package:dio/dio.dart';
 import 'client.dart';
 
-class FishPiException implements Exception {
+class FishPiException extends BusinessException {
+  @override
   final int code;
   final String msg;
 
-  FishPiException(this.code, this.msg);
+  FishPiException(this.code, this.msg) : super(msg, code: code);
 
   @override
   String toString() => 'FishPiException: code=$code, msg=$msg';
@@ -56,9 +58,13 @@ class FishPiApi {
       if (response.data['code'] == 0) {
         return response.data['Key'];
       } else {
-        throw Exception(response.data['msg'] ?? 'Login failed');
+        throw FishPiException(
+          response.data['code'] ?? -1,
+          response.data['msg'] ?? 'Login failed',
+        );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger().logError(e, stackTrace: stack, context: 'FishPiApi.login');
       rethrow;
     }
   }
@@ -71,9 +77,13 @@ class FishPiApi {
       if (response.data['code'] == 0) {
         return User.fromJson(response.data['data']);
       } else {
-        throw Exception(response.data['msg'] ?? 'Failed to get user info');
+        throw FishPiException(
+          response.data['code'] ?? -1,
+          response.data['msg'] ?? 'Failed to get user info',
+        );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger().logError(e, stackTrace: stack, context: 'FishPiApi.getUser');
       rethrow;
     }
   }

@@ -4,7 +4,7 @@
 /// 提供单例访问模式，并包含请求拦截器以自动附加 apiKey。
 import 'package:dio/dio.dart';
 import '../utils/constants.dart';
-import '../utils/api_logger.dart';
+import '../utils/app_logger.dart';
 
 class ApiClient {
   late final Dio _dio;
@@ -37,7 +37,7 @@ class ApiClient {
         },
         onError: (DioException e, handler) {
           // Log error to file
-          ApiLogger().logError(e, stackTrace: e.stackTrace);
+          AppLogger().logError(e, stackTrace: e.stackTrace, context: 'API');
           return handler.next(e);
         },
       ),

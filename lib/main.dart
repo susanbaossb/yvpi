@@ -13,8 +13,32 @@ import 'pages/section_page.dart';
 import 'pages/user_profile_page.dart';
 import 'pages/chat_room_page.dart';
 import 'utils/constants.dart';
+import 'utils/app_logger.dart';
+import 'dart:ui';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化日志工具
+  final logger = AppLogger();
+  await logger.init();
+
+  // 捕获 Flutter 框架内的错误
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    logger.logError(
+      details.exception,
+      stackTrace: details.stack,
+      context: 'Flutter Framework',
+    );
+  };
+
+  // 捕获异步错误（Platform 级别）
+  PlatformDispatcher.instance.onError = (error, stack) {
+    logger.logError(error, stackTrace: stack, context: 'Platform');
+    return true;
+  };
+
   runApp(
     MultiProvider(
       providers: [

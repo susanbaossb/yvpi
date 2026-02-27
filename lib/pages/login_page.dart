@@ -18,8 +18,8 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController(text: 'PHPer');
-  final _passwordController = TextEditingController(text: '15737508219su');
+  final _usernameController = TextEditingController(text: '');
+  final _passwordController = TextEditingController(text: '');
   final _mfaController = TextEditingController();
   bool _rememberMe = true;
 

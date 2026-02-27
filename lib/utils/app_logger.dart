@@ -1,43 +1,63 @@
-/// API 日志工具
+/// 应用程序日志工具
 ///
-/// 负责记录网络请求过程中的错误信息到本地文件系统。
-/// 提供日志写入、读取和清除功能，便于调试和问题排查。
+/// 负责记录全局异常、业务错误和网络请求错误到本地文件系统。
+/// 符合规则：异常必须统一捕获并记录日志。
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
+import 'exceptions.dart';
 
-class ApiLogger {
-  static final ApiLogger _instance = ApiLogger._internal();
-  factory ApiLogger() => _instance;
-  ApiLogger._internal();
+class AppLogger {
+  static final AppLogger _instance = AppLogger._internal();
+  factory AppLogger() => _instance;
+  AppLogger._internal();
 
   File? _logFile;
 
   Future<void> init() async {
     if (_logFile != null) return;
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final logDir = Directory('${directory.path}/logs');
+      String logDirPath;
+      if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+        // 桌面端使用项目根目录下的 logs 文件夹
+        logDirPath = '${Directory.current.path}/logs';
+      } else {
+        // Web 端或移动端使用应用文档目录
+        final directory = await getApplicationDocumentsDirectory();
+        logDirPath = '${directory.path}/logs';
+      }
+
+      final logDir = Directory(logDirPath);
       if (!await logDir.exists()) {
         await logDir.create(recursive: true);
       }
-      _logFile = File('${logDir.path}/api_error.log');
+      _logFile = File('${logDir.path}/app_error.log');
     } catch (e) {
       debugPrint('Failed to initialize logger: $e');
     }
   }
 
-  Future<void> logError(dynamic error, {StackTrace? stackTrace}) async {
+  /// 记录错误到文件
+  Future<void> logError(dynamic error, {StackTrace? stackTrace, String? context}) async {
     try {
       if (_logFile == null) await init();
       if (_logFile == null) return;
 
       final now = DateTime.now();
       final buffer = StringBuffer();
-      buffer.writeln('[$now] ----------------------------------------');
+      buffer.writeln('[$now] ${context != null ? "[$context] " : ""}----------------------------------------');
 
-      if (error is DioException) {
+      if (error is AppException) {
+        buffer.writeln('Type: ${error.runtimeType}');
+        buffer.writeln('Message: ${error.message}');
+        if (error is BusinessException) {
+          buffer.writeln('Code: ${error.code}');
+        }
+        if (error.originalError != null) {
+          buffer.writeln('Original Error: ${error.originalError}');
+        }
+      } else if (error is DioException) {
         buffer.writeln('Type: DioException');
         buffer.writeln('URL: ${error.requestOptions.uri}');
         buffer.writeln('Method: ${error.requestOptions.method}');
@@ -62,6 +82,11 @@ class ApiLogger {
         mode: FileMode.append,
         flush: true,
       );
+      
+      // 同时在调试模式下打印到控制台
+      if (kDebugMode) {
+        debugPrint(buffer.toString());
+      }
     } catch (e) {
       debugPrint('Failed to write log: $e');
     }

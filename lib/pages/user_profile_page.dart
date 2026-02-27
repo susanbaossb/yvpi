@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 /// - 个人资料卡片（头像、角色、积分、统计数据等）
 /// - 关注/取消关注功能
 /// - Tab 页签切换展示用户的文章、回帖等动态内容
+
 import 'package:provider/provider.dart';
-import '../api/fishpi_api.dart';
 import '../models/article.dart';
 import '../models/user.dart';
 import '../providers/auth_provider.dart';
