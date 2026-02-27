@@ -418,11 +418,54 @@ class FishPiApi {
         data: {'content': content},
       );
       if (response.data['code'] != 0) {
-        throw Exception(response.data['msg'] ?? '发送失败');
+        throw FishPiException(
+          response.data['code'] ?? -1,
+          response.data['msg'] ?? '发送失败',
+        );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger().logError(
+        e,
+        stackTrace: stack,
+        context: 'FishPiApi.sendChatMessage',
+      );
       rethrow;
     }
+  }
+
+  /// 发送红包
+  ///
+  /// [type] 红包类型: random(拼手气), average(平分), specify(专属), heartbeat(心跳), rockPaperScissors(猜拳)
+  /// [money] 红包总积分 (平分红包为单个积分)
+  /// [count] 红包个数
+  /// [msg] 祝福语
+  /// [receivers] 接收者列表 (专属红包有效)
+  /// [gesture] 猜拳手势 (0:石头, 1:剪刀, 2:布)
+  Future<void> sendRedPacket({
+    required String type,
+    required int money,
+    required int count,
+    String msg = '摸鱼者，事竟成！',
+    List<String>? receivers,
+    int? gesture,
+  }) async {
+    final Map<String, dynamic> packetData = {
+      'msg': msg,
+      'money': money,
+      'count': count,
+      'type': type,
+    };
+
+    if (receivers != null && receivers.isNotEmpty) {
+      packetData['recivers'] = receivers;
+    }
+
+    if (type == 'rockPaperScissors' && gesture != null) {
+      packetData['gesture'] = gesture;
+    }
+
+    final String content = '[redpacket]${jsonEncode(packetData)}[/redpacket]';
+    return sendChatMessage(content);
   }
 
   // 获取聊天室历史消息
@@ -611,35 +654,6 @@ class FishPiApi {
       return [];
     } catch (e) {
       return [];
-    }
-  }
-
-  // 发送聊天室红包
-  Future<void> sendRedPacket({
-    required String type,
-    required int money,
-    required int count,
-    required String msg,
-    List<String>? receivers,
-    int? gesture,
-  }) async {
-    try {
-      final response = await _client.dio.post(
-        '/chat-room/red-packet/send',
-        data: {
-          'type': type,
-          'money': money,
-          'count': count,
-          'msg': msg,
-          if (receivers != null) 'recivers': receivers,
-          if (gesture != null) 'gesture': gesture,
-        },
-      );
-      if (response.data['code'] != 0) {
-        throw Exception(response.data['msg'] ?? '发送失败');
-      }
-    } catch (e) {
-      rethrow;
     }
   }
 }

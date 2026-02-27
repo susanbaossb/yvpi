@@ -16,6 +16,7 @@ import '../providers/auth_provider.dart';
 import '../api/fishpi_api.dart';
 import '../models/chat_message.dart';
 import 'hover_user_card.dart';
+import 'red_packet_dialog.dart';
 
 class ChatRoomWidget extends StatefulWidget {
   const ChatRoomWidget({super.key});
@@ -355,40 +356,18 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                           final result = await api
                                               .openRedPacket(msg.oId);
                                           if (context.mounted) {
-                                            // Parse the result to find the user's money
-                                            int? money;
-                                            if (result['who'] is List) {
-                                              for (final item
-                                                  in result['who']) {
-                                                if (item['userName'] ==
-                                                    auth.user?.userName) {
-                                                  money = item['userMoney'];
-                                                  break;
-                                                }
-                                              }
-                                            }
-
                                             showDialog(
                                               context: context,
-                                              builder: (context) => AlertDialog(
-                                                title: Text(
-                                                  money != null
-                                                      ? '红包领取成功'
-                                                      : '红包详情',
-                                                ),
-                                                content: Text(
-                                                  money != null
-                                                      ? '恭喜你获得 $money 积分！'
-                                                      : '你似乎没有抢到这个红包，或者已经抢过了。',
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(context),
-                                                    child: const Text('确定'),
+                                              builder: (context) =>
+                                                  RedPacketDetailDialog(
+                                                    data: result,
+                                                    senderUserName:
+                                                        msg.userName,
+                                                    senderNickname:
+                                                        msg.userNickname,
+                                                    senderAvatar:
+                                                        msg.userAvatarURL,
                                                   ),
-                                                ],
-                                              ),
                                             );
                                           }
                                         } catch (e) {
@@ -397,7 +376,7 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                               context,
                                             ).showSnackBar(
                                               SnackBar(
-                                                content: Text('领取失败: $e'),
+                                                content: Text('打开红包失败: $e'),
                                               ),
                                             );
                                           }
@@ -407,11 +386,18 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                         width: 240,
                                         decoration: BoxDecoration(
                                           color: isCollected
-                                              ? const Color(0xFFEF9A9A) // 浅红色
-                                              : const Color(0xFFD32F2F), // 深红色
+                                              ? const Color(0xFFF8F8F8)
+                                              : const Color(0xFFD32F2F),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
+                                          border: isCollected
+                                              ? Border.all(
+                                                  color: const Color(
+                                                    0xFFEEEEEE,
+                                                  ),
+                                                )
+                                              : null,
                                         ),
                                         padding: const EdgeInsets.all(12),
                                         child: Row(
@@ -419,9 +405,9 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                             Icon(
                                               Icons.redeem,
                                               color: isCollected
-                                                  ? Colors.white70
+                                                  ? const Color(0xFFEF9A9A)
                                                   : const Color(0xFFFFD700),
-                                              size: 36,
+                                              size: 40,
                                             ),
                                             const SizedBox(width: 12),
                                             Expanded(
@@ -436,8 +422,10 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                                             .isNotEmpty
                                                         ? msg.redPacket!.msg
                                                         : '恭喜发财，大吉大利',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
+                                                    style: TextStyle(
+                                                      color: isCollected
+                                                          ? Colors.grey[400]
+                                                          : Colors.white,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                       fontSize: 14,
@@ -446,18 +434,50 @@ class _ChatRoomWidgetState extends State<ChatRoomWidget> {
                                                     overflow:
                                                         TextOverflow.ellipsis,
                                                   ),
-                                                  const SizedBox(height: 4),
+                                                  const SizedBox(height: 2),
                                                   Text(
-                                                    isCollected
-                                                        ? '${msg.redPacket!.typeName} (已领取)'
-                                                        : msg
-                                                              .redPacket!
-                                                              .typeName,
-                                                    style: const TextStyle(
-                                                      color: Colors.white70,
-                                                      fontSize: 12,
+                                                    msg.redPacket!.typeName,
+                                                    style: TextStyle(
+                                                      color: isCollected
+                                                          ? Colors.grey[400]
+                                                          : Colors.white70,
+                                                      fontSize: 13,
                                                     ),
                                                   ),
+                                                  const SizedBox(height: 2),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.toll,
+                                                        size: 14,
+                                                        color: isCollected
+                                                            ? Colors.grey[300]
+                                                            : const Color(
+                                                                0xFFFFD700,
+                                                              ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${msg.redPacket!.money}',
+                                                        style: TextStyle(
+                                                          color: isCollected
+                                                              ? Colors.grey[400]
+                                                              : Colors.white,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  if (isCollected) ...[
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      '已经被抢光啦',
+                                                      style: TextStyle(
+                                                        color: Colors.grey[300],
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ],
                                               ),
                                             ),
