@@ -30,6 +30,8 @@ class _UserProfilePageState extends State<UserProfilePage>
   User? _user;
   bool _isLoadingUser = true;
   String? _error;
+  bool _isFollowing = false;
+  bool _isProcessingFollow = false;
 
   @override
   void initState() {
@@ -52,6 +54,8 @@ class _UserProfilePageState extends State<UserProfilePage>
         setState(() {
           _user = user;
           _isLoadingUser = false;
+          _isFollowing =
+              user?.canFollow == 'no'; // 'no' 表示已关注（不可再关注），'yes' 表示未关注
         });
       }
     } catch (e) {
@@ -59,6 +63,36 @@ class _UserProfilePageState extends State<UserProfilePage>
         setState(() {
           _error = e.toString();
           _isLoadingUser = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    if (_user == null || _isProcessingFollow) return;
+
+    setState(() {
+      _isProcessingFollow = true;
+    });
+
+    try {
+      final api = context.read<AuthProvider>().api;
+      if (_isFollowing) {
+        await api.unfollowUser(_user!.oId);
+      } else {
+        await api.followUser(_user!.oId);
+      }
+
+      if (mounted) {
+        setState(() {
+          _isFollowing = !_isFollowing;
+          _isProcessingFollow = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessingFollow = false;
         });
       }
     }
@@ -162,9 +196,23 @@ class _UserProfilePageState extends State<UserProfilePage>
       child: AnimatedBuilder(
         animation: _tabController,
         builder: (context, child) {
-          // For now, only 'Posts' tab is implemented or all tabs show articles
-          // In real app, we would switch content based on index
-          return _ArticleList(username: widget.username);
+          switch (_tabController.index) {
+            case 0:
+              return _ArticleList(username: widget.username);
+            case 1:
+            case 2:
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text(
+                    '没有鸡，哪来的鸡蛋呢？',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                ),
+              );
+            default:
+              return const SizedBox();
+          }
         },
       ),
     );
@@ -217,6 +265,59 @@ class _UserProfilePageState extends State<UserProfilePage>
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 12),
+            // Badges from allMetalOwned
+            if (u.allMetalOwned != null && u.allMetalOwned!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: u.allMetalOwned!.map((badge) {
+                    final imageUrl = badge.imageUrl;
+                    if (imageUrl != null) {
+                      return Tooltip(
+                        message:
+                            '[${badge.type ?? "勋章"}] ${badge.name} - ${badge.description ?? ""}',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                badge.backgroundColor ??
+                                Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.network(
+                                imageUrl,
+                                width: 16,
+                                height: 16,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const SizedBox(),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                badge.name,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: badge.fontColor ?? Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox();
+                  }).toList(),
+                ),
+              ),
             // Tags/Badges
             Wrap(
               spacing: 4,
@@ -234,38 +335,49 @@ class _UserProfilePageState extends State<UserProfilePage>
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  // Follow logic
-                },
-                child: const Text('关注'),
-              ),
+              child: _isFollowing
+                  ? OutlinedButton(
+                      onPressed: _isProcessingFollow ? null : _toggleFollow,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey,
+                        side: const BorderSide(color: Colors.grey),
+                      ),
+                      child: _isProcessingFollow
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('取消关注'),
+                    )
+                  : FilledButton(
+                      onPressed: _isProcessingFollow ? null : _toggleFollow,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                      ),
+                      child: _isProcessingFollow
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('关注'),
+                    ),
             ),
             const SizedBox(height: 24),
             const Divider(height: 1),
             const SizedBox(height: 16),
             _buildInfoRow('摸鱼派 ${u.userNo ?? 0} 号成员', ''),
             if (u.userRole.isNotEmpty) _buildInfoRow('角色', u.userRole),
-            _buildInfoRow('积分', '0x${(u.userPoint ?? 0).toRadixString(16)}'),
+            _buildInfoRow('积分', '${u.userPoint ?? 0}'),
+            _buildInfoRow('在线时长', '${((u.onlineMinute ?? 0))} 分钟'),
             if (u.userCity != null && u.userCity!.isNotEmpty)
               _buildInfoRow('位置', u.userCity!),
-            _buildInfoRow('加入时间', u.userCreateTime ?? '-'),
-            _buildInfoRow('最后登录', u.userLatestLoginTime ?? '-'),
-            _buildInfoRow('最长连续签到', '${u.userLongestCheckinStreak ?? 0} 天'),
-            _buildInfoRow('当前连续签到', '${u.userCurrentCheckinStreak ?? 0} 天'),
             const SizedBox(height: 24),
             // Stats Grid
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem('0', '标签'),
-                _buildStatItem('?', '帖子'),
-                _buildStatItem('?', '回帖'),
-                _buildStatItem('0', '关注者'),
-                _buildStatItem((u.followingUserCount ?? 0).toString(), '关注用户'),
-              ],
-            ),
-            const SizedBox(height: 24),
             // Points (bottom part of image)
             // Just a placeholder or partial view as in image
           ],

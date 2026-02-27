@@ -83,9 +83,41 @@ class FishPiApi {
     try {
       final Response response = await _client.dio.get('/user/$username');
       if (response.statusCode == 200) {
-        return User.fromJson(response.data);
+        final data = Map<String, dynamic>.from(response.data);
+
+        // 如果 userCreateTime/userLatestLoginTime 是毫秒时间戳，转换为字符串
+        if (data['userCreateTime'] is int) {
+          data['userCreateTime'] = DateTime.fromMillisecondsSinceEpoch(
+            data['userCreateTime'],
+          ).toString().split('.')[0];
+        }
+        if (data['userLatestLoginTime'] is int) {
+          data['userLatestLoginTime'] = DateTime.fromMillisecondsSinceEpoch(
+            data['userLatestLoginTime'],
+          ).toString().split('.')[0];
+        }
+
+        // 解析 allMetalOwned 字符串为 List
+        if (data['allMetalOwned'] is String &&
+            data['allMetalOwned'].isNotEmpty) {
+          try {
+            final metalJson = jsonDecode(data['allMetalOwned']);
+            if (metalJson is Map && metalJson['list'] is List) {
+              data['allMetalOwned'] = metalJson['list'];
+            }
+          } catch (e) {
+            debugPrint('解析徽章数据失败: $e');
+            data['allMetalOwned'] = null;
+          }
+        }
+
+        return User.fromJson(data);
+      } else if (response.data is Map && response.data['code'] != 0) {
+        debugPrint('获取用户信息失败: ${response.data['msg']}');
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint('获取用户信息失败: $e');
+    }
     return null;
   }
 

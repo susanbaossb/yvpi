@@ -2,9 +2,74 @@
 ///
 /// 定义用户的基本资料（用户名、昵称、头像）及扩展属性（角色、积分、是否可关注、在线状态等）。
 /// 包含 json_serializable 生成的序列化代码。
+import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'user.g.dart';
+
+@JsonSerializable()
+class UserBadge {
+  final String? data;
+  final String name;
+  final String? description;
+  final String? expireDate;
+  final String id;
+  final String attr; // "url=...&backcolor=...&fontcolor=..."
+  final String? type;
+  final bool enabled;
+  final int order;
+
+  UserBadge({
+    this.data,
+    required this.name,
+    this.description,
+    this.expireDate,
+    required this.id,
+    required this.attr,
+    this.type,
+    required this.enabled,
+    required this.order,
+  });
+
+  factory UserBadge.fromJson(Map<String, dynamic> json) =>
+      _$UserBadgeFromJson(json);
+  Map<String, dynamic> toJson() => _$UserBadgeToJson(this);
+
+  // 解析 attr 中的图片 URL
+  String? get imageUrl {
+    final params = attr.split('&');
+    for (final p in params) {
+      if (p.startsWith('url=')) {
+        return p.substring(4);
+      }
+    }
+    return null;
+  }
+
+  // 解析 attr 中的背景颜色
+  Color? get backgroundColor {
+    final params = attr.split('&');
+    for (final p in params) {
+      if (p.startsWith('backcolor=')) {
+        final colorStr = p.substring(10);
+        return Color(int.parse('FF$colorStr', radix: 16));
+      }
+    }
+    return null;
+  }
+
+  // 解析 attr 中的文字颜色
+  Color? get fontColor {
+    final params = attr.split('&');
+    for (final p in params) {
+      if (p.startsWith('fontcolor=')) {
+        final colorStr = p.substring(10);
+        return Color(int.parse('FF$colorStr', radix: 16));
+      }
+    }
+    return null;
+  }
+}
 
 @JsonSerializable()
 class User {
@@ -31,10 +96,19 @@ class User {
   final int? userAppRole;
   final String? userCreateTime;
   final String? userLatestLoginTime;
-  @JsonKey(fromJson: _stringToInt)
+  @JsonKey(name: 'userLongestCheckinStreak', fromJson: _stringToInt)
   final int? userLongestCheckinStreak;
-  @JsonKey(fromJson: _stringToInt)
+  @JsonKey(name: 'userCurrentCheckinStreak', fromJson: _stringToInt)
   final int? userCurrentCheckinStreak;
+  @JsonKey(name: 'userArticleCount', fromJson: _stringToInt)
+  final int? userArticleCount;
+  @JsonKey(name: 'userCommentCount', fromJson: _stringToInt)
+  final int? userCommentCount;
+  @JsonKey(name: 'userTagCount', fromJson: _stringToInt)
+  final int? userTagCount;
+  @JsonKey(name: 'userFollowerCount', fromJson: _stringToInt)
+  final int? userFollowerCount;
+  final List<UserBadge>? allMetalOwned;
 
   User({
     required this.oId,
@@ -57,6 +131,11 @@ class User {
     this.userLatestLoginTime,
     this.userLongestCheckinStreak,
     this.userCurrentCheckinStreak,
+    this.userArticleCount,
+    this.userCommentCount,
+    this.userTagCount,
+    this.userFollowerCount,
+    this.allMetalOwned,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);

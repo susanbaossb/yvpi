@@ -6,6 +6,30 @@ part of 'user.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+UserBadge _$UserBadgeFromJson(Map<String, dynamic> json) => UserBadge(
+  data: json['data'] as String?,
+  name: json['name'] as String,
+  description: json['description'] as String?,
+  expireDate: json['expireDate'] as String?,
+  id: json['id'] as String,
+  attr: json['attr'] as String,
+  type: json['type'] as String?,
+  enabled: json['enabled'] as bool,
+  order: (json['order'] as num).toInt(),
+);
+
+Map<String, dynamic> _$UserBadgeToJson(UserBadge instance) => <String, dynamic>{
+  'data': instance.data,
+  'name': instance.name,
+  'description': instance.description,
+  'expireDate': instance.expireDate,
+  'id': instance.id,
+  'attr': instance.attr,
+  'type': instance.type,
+  'enabled': instance.enabled,
+  'order': instance.order,
+};
+
 User _$UserFromJson(Map<String, dynamic> json) => User(
   oId: json['oId'] as String,
   userName: json['userName'] as String,
@@ -27,6 +51,13 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
   userLatestLoginTime: json['userLatestLoginTime'] as String?,
   userLongestCheckinStreak: _stringToInt(json['userLongestCheckinStreak']),
   userCurrentCheckinStreak: _stringToInt(json['userCurrentCheckinStreak']),
+  userArticleCount: _stringToInt(json['userArticleCount']),
+  userCommentCount: _stringToInt(json['userCommentCount']),
+  userTagCount: _stringToInt(json['userTagCount']),
+  userFollowerCount: _stringToInt(json['userFollowerCount']),
+  allMetalOwned: (json['allMetalOwned'] as List<dynamic>?)
+      ?.map((e) => UserBadge.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -50,4 +81,9 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
   'userLatestLoginTime': instance.userLatestLoginTime,
   'userLongestCheckinStreak': instance.userLongestCheckinStreak,
   'userCurrentCheckinStreak': instance.userCurrentCheckinStreak,
+  'userArticleCount': instance.userArticleCount,
+  'userCommentCount': instance.userCommentCount,
+  'userTagCount': instance.userTagCount,
+  'userFollowerCount': instance.userFollowerCount,
+  'allMetalOwned': instance.allMetalOwned,
 };
